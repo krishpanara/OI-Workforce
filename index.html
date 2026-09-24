@@ -4091,59 +4091,38 @@ document.getElementById('davidPersonaliseNext').addEventListener('click', ()=>{
   }
 
   // Hands off to the real product once the demo has everything it needs
-  // (name, work email, org name, industry, the role they played). Registers
-  // and logs in directly from here via a credentialed cross-origin POST to
-  // the real app's /api/register — no separate registration form is ever
-  // shown, matching what was asked for. The static "welcome"/"personalise"
-  // screens below this point are no longer reached — left in place rather
-  // than torn out, since removing them isn't needed for this change.
+  // (name, work email, org name, industry, the role they played). No
+  // registration form is ever shown to the visitor, but HOW that's done
+  // matters: an earlier version called the real app's /api/register
+  // directly from here via a credentialed cross-origin fetch(), which
+  // measured broken — third-party cookie blocking silently drops the
+  // Set-Cookie response on a cross-origin request even with
+  // credentials:'include', so the account got created but the visitor
+  // landed on the real app's /login instead of being signed in. A same-
+  // origin fetch has no such restriction (verified), so this instead does
+  // a normal top-level navigation to /register?auto=1&..., and THAT page
+  // submits immediately itself, same-origin, with nothing shown but a
+  // loading state — same "no form to fill" UX, real session cookie.
   // `register_url` query override lets this be pointed at a local/dev
   // instance's origin while testing, without editing this file per test.
-  async function goToRealRegistration(){
+  function goToRealRegistration(){
     const registerUrlOverride = new URLSearchParams(window.location.search).get('register_url');
     const origin = registerUrlOverride
       ? new URL(registerUrlOverride).origin
       : 'https://dev.hyphenlabs.ai';
     const answers = state.orgAnswers || {};
-
-    const lineEl = document.getElementById('davidLoadingLine');
-    try {
-      const res = await fetch(origin + '/api/register', {
-        method: 'POST',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          orgName: answers.company || '',
-          adminDisplayName: state.name || '',
-          adminEmail: answers.email || '',
-          // No password field anywhere in this flow, so the server generates
-          // one — a fixed password here would let anyone log into anyone
-          // else's demo-created account.
-          autoGenerate: true,
-          industry: state.industry || '',
-          position: state.position || '',
-          website: answers.website || '',
-          country: answers.country || '',
-          currency: state.currency || 'USD',
-        }),
-      });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) {
-        throw new Error(data.error || ('Registration failed (' + res.status + ')'));
-      }
-      // Their only copy of this password — nothing else displays it, and losing
-      // the session means losing access until a real reset flow exists. Shown
-      // briefly rather than not at all; a proper "here's your password, save
-      // it" screen is a better version of this, not a different feature.
-      if (lineEl && data.generatedPassword) {
-        lineEl.textContent = 'Your password is ' + data.generatedPassword + ' — save it before continuing.';
-        await new Promise(r => setTimeout(r, reduceMotion ? 500 : 4500));
-      }
-      window.location.href = origin + '/my-oi/new-design';
-    } catch (e) {
-      if (lineEl) lineEl.textContent = "Something went wrong setting up your organisation: " + e.message;
-      console.error('goToRealRegistration failed:', e);
-    }
+    const params = new URLSearchParams({
+      auto: '1',
+      name: state.name || '',
+      email: answers.email || '',
+      org: answers.company || '',
+      industry: state.industry || '',
+      position: state.position || '',
+      website: answers.website || '',
+      country: answers.country || '',
+      currency: state.currency || 'USD',
+    });
+    window.location.href = origin + '/register?' + params.toString();
   }
 
   // ---------- SCREEN 8: welcome ----------
