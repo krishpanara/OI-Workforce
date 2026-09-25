@@ -4101,52 +4101,72 @@ document.getElementById('davidPersonaliseNext').addEventListener('click', ()=>{
 
   // Hands off to the real product once the demo has everything it needs
   // (name, work email, org name, industry, the role they played). No
-  // registration form is ever shown to the visitor, but HOW that's done
-  // matters: an earlier version called the real app's /api/register
-  // directly from here via a credentialed cross-origin fetch(), which
-  // measured broken — third-party cookie blocking silently drops the
-  // Set-Cookie response on a cross-origin request even with
-  // credentials:'include', so the account got created but the visitor
-  // landed on the real app's /login instead of being signed in. A same-
-  // origin fetch has no such restriction (verified), so this instead does
-  // a normal top-level navigation to /register?auto=1&..., and THAT page
-  // submits immediately itself, same-origin, with nothing shown but a
-  // loading state — same "no form to fill" UX, real session cookie.
+  // registration form is ever shown to the visitor, but HOW that's done has
+  // gone through two broken versions before this one:
+  //   1. A credentialed cross-origin fetch() straight to /api/register —
+  //      measured broken, third-party cookie blocking silently drops the
+  //      Set-Cookie response, so the account gets created but the visitor
+  //      lands on /login instead of being signed in.
+  //   2. A same-origin top-level navigation to /register?auto=1&<fields as
+  //      query params> — fixed #1, but the avatar photo is a full base64
+  //      data: URI (tens of KB), and putting that in a URL blew straight
+  //      through nginx's request-line length limit ("414 Request-URI Too
+  //      Large") the moment a photo was picked.
+  // This instead POSTs a real <form> (not fetch, not a GET navigation)
+  // straight to /api/register — a request BODY has no such length ceiling,
+  // and a genuine top-level form submission has no cross-origin cookie
+  // problem either (see #1) since the response setting the cookie is a
+  // normal same-site navigation once it lands, not a fetch. That route
+  // responds to a form submission with a redirect to /register/welcome
+  // (cookies set on that redirect), which shows the generated password
+  // before continuing to My OI.
   // `register_url` query override lets this be pointed at a local/dev
   // instance's origin while testing, without editing this file per test.
   // Defaults to workforce.hyphenlabs.ai, not dev.hyphenlabs.ai — dev is a
   // separate server nobody has redeployed since this flow was built, so it
-  // still runs the old /register (always the manual form, ignores auto=1).
-  // workforce.hyphenlabs.ai is deployed and verified working end-to-end.
+  // still runs old code. workforce.hyphenlabs.ai is deployed and verified
+  // working end-to-end.
   function goToRealRegistration(){
     const registerUrlOverride = new URLSearchParams(window.location.search).get('register_url');
     const origin = registerUrlOverride
       ? new URL(registerUrlOverride).origin
       : 'https://workforce.hyphenlabs.ai';
     const answers = state.orgAnswers || {};
-    const params = new URLSearchParams({
-      auto: '1',
-      name: state.name || '',
-      email: answers.email || '',
-      org: answers.company || '',
+    const fields = {
+      orgName: answers.company || '',
+      adminDisplayName: state.name || '',
+      adminEmail: answers.email || '',
+      autoGenerate: 'true',
       industry: state.industry || '',
       position: state.position || '',
       website: answers.website || '',
       country: answers.country || '',
       currency: state.currency || 'USD',
-      // From the personalise screen (optional, so both may be empty) —
+      // From the personalise screen (optional, so all three may be empty) —
       // oiName renames the real agent, voiceGender picks a real ElevenLabs
-      // voice, matching what was actually chosen here rather than leaving
-      // it as a demo-only cosmetic preview.
+      // voice, imageUrl sets its photo — matching what was actually chosen
+      // here rather than leaving it as a demo-only cosmetic preview.
       oiName: answers.personalOIName || '',
       voiceGender: answers.voiceGender || '',
-      // Resolved to an absolute URL against THIS page's own origin — the
-      // avatar <img> src on this site is a path relative to this site
-      // (e.g. "images/consultants/…"), which only resolves correctly when
-      // read back on a different origin (the real app) if it's absolute.
+      // Resolved to an absolute URL against THIS page's own origin — a
+      // data: URI is already absolute and passes through unchanged; a
+      // relative image path only resolves correctly read back from a
+      // different origin (the real app) once it's absolute.
       imageUrl: state.avatarPhoto ? new URL(state.avatarPhoto, window.location.href).href : '',
+    };
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = origin + '/api/register';
+    form.style.display = 'none';
+    Object.entries(fields).forEach(([name, value]) => {
+      const input = document.createElement('input');
+      input.type = 'hidden';
+      input.name = name;
+      input.value = value;
+      form.appendChild(input);
     });
-    window.location.href = origin + '/register?' + params.toString();
+    document.body.appendChild(form);
+    form.submit();
   }
 
   // ---------- SCREEN 8: welcome ----------
