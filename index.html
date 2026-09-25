@@ -3987,6 +3987,13 @@ function startPersonalise(){
   showScreen('personalise');
   const nameInput = document.getElementById('davidPersonaliseName');
   if(nameInput) nameInput.value = '';
+  // The input above resets on every visit to this screen, but state itself
+  // didn't — so leaving the field blank this time (or picking a different
+  // avatar) silently kept whatever name/photo an EARLIER visit in the same
+  // page load had set, with nothing on screen suggesting a previous value
+  // was still in play. Real bug: reported as "it always shows Oliver".
+  delete state.orgAnswers.personalOIName;
+  delete state.avatarPhoto;
 
   // ---------- Avatar: illustrated silhouettes only, never a photo upload. Real or unauthorised
   // people's photos have no place here — these are clearly abstract, not photographic, across a
@@ -4133,6 +4140,11 @@ document.getElementById('davidPersonaliseNext').addEventListener('click', ()=>{
       // it as a demo-only cosmetic preview.
       oiName: answers.personalOIName || '',
       voiceGender: answers.voiceGender || '',
+      // Resolved to an absolute URL against THIS page's own origin — the
+      // avatar <img> src on this site is a path relative to this site
+      // (e.g. "images/consultants/…"), which only resolves correctly when
+      // read back on a different origin (the real app) if it's absolute.
+      imageUrl: state.avatarPhoto ? new URL(state.avatarPhoto, window.location.href).href : '',
     });
     window.location.href = origin + '/register?' + params.toString();
   }
