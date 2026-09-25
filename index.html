@@ -4126,7 +4126,14 @@ document.getElementById('davidPersonaliseNext').addEventListener('click', ()=>{
   // separate server nobody has redeployed since this flow was built, so it
   // still runs old code. workforce.hyphenlabs.ai is deployed and verified
   // working end-to-end.
+  // Guards against a double-click submitting the hidden form twice: two
+  // near-simultaneous POST /api/register calls for the same email can each
+  // create a real account with a different generated password, and only one
+  // of the resulting sessions is the one the browser actually lands on.
+  let registrationSubmitted = false;
   function goToRealRegistration(){
+    if(registrationSubmitted) return;
+    registrationSubmitted = true;
     const registerUrlOverride = new URLSearchParams(window.location.search).get('register_url');
     const origin = registerUrlOverride
       ? new URL(registerUrlOverride).origin
