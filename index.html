@@ -4057,9 +4057,7 @@ function startPersonalise(){
 document.getElementById('davidPersonaliseNext').addEventListener('click', ()=>{
   const nameInput = document.getElementById('davidPersonaliseName');
   if(nameInput && nameInput.value.trim()) state.orgAnswers.personalOIName = nameInput.value.trim();
-  closeDavid();
-  const productSection = document.getElementById('product');
-  if(productSection) productSection.scrollIntoView({behavior: reduceMotion ? 'auto' : 'smooth'});
+  goToRealRegistration();
 });
 
   // ---------- SCREEN 7: preparing / loading ----------
@@ -4079,7 +4077,11 @@ document.getElementById('davidPersonaliseNext').addEventListener('click', ()=>{
     let idx = 0;
     function step(){
       if(idx >= LOADING_LINES.length){
-        setTimeout(goToRealRegistration, 500);
+        // -> welcome -> ("Personalise my Personal OI") -> personalise, where
+        // the visitor actually picks a voice/name/style before registration
+        // fires (davidPersonaliseNext below). Real registration used to fire
+        // straight from here, skipping that screen entirely.
+        setTimeout(startWelcome, 500);
         return;
       }
       lineEl.textContent = LOADING_LINES[idx];
@@ -4121,6 +4123,12 @@ document.getElementById('davidPersonaliseNext').addEventListener('click', ()=>{
       website: answers.website || '',
       country: answers.country || '',
       currency: state.currency || 'USD',
+      // From the personalise screen (optional, so both may be empty) —
+      // oiName renames the real agent, voiceGender picks a real ElevenLabs
+      // voice, matching what was actually chosen here rather than leaving
+      // it as a demo-only cosmetic preview.
+      oiName: answers.personalOIName || '',
+      voiceGender: answers.voiceGender || '',
     });
     window.location.href = origin + '/register?' + params.toString();
   }
