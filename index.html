@@ -4107,11 +4107,15 @@ document.getElementById('davidPersonaliseNext').addEventListener('click', ()=>{
   // loading state — same "no form to fill" UX, real session cookie.
   // `register_url` query override lets this be pointed at a local/dev
   // instance's origin while testing, without editing this file per test.
+  // Defaults to workforce.hyphenlabs.ai, not dev.hyphenlabs.ai — dev is a
+  // separate server nobody has redeployed since this flow was built, so it
+  // still runs the old /register (always the manual form, ignores auto=1).
+  // workforce.hyphenlabs.ai is deployed and verified working end-to-end.
   function goToRealRegistration(){
     const registerUrlOverride = new URLSearchParams(window.location.search).get('register_url');
     const origin = registerUrlOverride
       ? new URL(registerUrlOverride).origin
-      : 'https://dev.hyphenlabs.ai';
+      : 'https://workforce.hyphenlabs.ai';
     const answers = state.orgAnswers || {};
     const params = new URLSearchParams({
       auto: '1',
