@@ -4121,12 +4121,8 @@ document.getElementById('davidPersonaliseNext').addEventListener('click', ()=>{
   // responds to a form submission with a redirect to /register/welcome
   // (cookies set on that redirect), which shows the generated password
   // before continuing to My OI.
-  // `register_url` query override lets this be pointed at a local/dev
+  // `register_url` query override lets this be pointed at a different
   // instance's origin while testing, without editing this file per test.
-  // Defaults to workforce.hyphenlabs.ai, not dev.hyphenlabs.ai — dev is a
-  // separate server nobody has redeployed since this flow was built, so it
-  // still runs old code. workforce.hyphenlabs.ai is deployed and verified
-  // working end-to-end.
   // Guards against a double-click submitting the hidden form twice: two
   // near-simultaneous POST /api/register calls for the same email can each
   // create a real account with a different generated password, and only one
@@ -4138,7 +4134,7 @@ document.getElementById('davidPersonaliseNext').addEventListener('click', ()=>{
     const registerUrlOverride = new URLSearchParams(window.location.search).get('register_url');
     const origin = registerUrlOverride
       ? new URL(registerUrlOverride).origin
-      : 'https://workforce.hyphenlabs.ai';
+      : 'https://dev.hyphenlabs.ai';
     const answers = state.orgAnswers || {};
     const fields = {
       orgName: answers.company || '',
