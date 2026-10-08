@@ -61,12 +61,18 @@ const INDUSTRY_PROFILES: Record<string, { depts: string[] }> = {
   Mining: { depts: ['Operations','Safety','Finance','Procurement','Logistics'] },
 };
 
-const OTHER_OPTION = 'Other (please tell me)';
-const DISCOVERY_QUESTIONS = [
-  { key: 'objective', multi: true, text: 'Right now, what matters most to you?', options: ['Increase revenue growth','Improve team efficiency','Reduce operating costs','Better organisation of documents','Improve customer service','Strengthen compliance and risk management',OTHER_OPTION] },
-  { key: 'systems', multi: true, text: 'Which best describes how your team works today?', options: ['Mostly spreadsheets & email','Mostly verbal or informal communication','A few disconnected tools','A mix of legacy and modern systems','One central system already','Not sure yet'] },
-  { key: 'staffing', multi: false, text: 'Right now, would you say your team is…', options: ['Stretched thin, doing more than they should','About right, but using some manual systems & processes','Well staffed, but could be a little more efficient','Hard to describe at the moment'] },
-  { key: 'growth', multi: true, text: 'Which of these is a constraint on growth today?', options: ['Attracting new customers','Converting interest into sales','Retaining existing customers','Operational capacity to meet demand','Not yet clear'] },
+const OTHER_OPTION = 'Other (please specify)';
+type DiscoveryQuestion = { key: string; multi: boolean; text: string; options: string[]; freeText?: false } | { key: string; freeText: true; text: string; placeholder: string };
+const DISCOVERY_QUESTIONS: DiscoveryQuestion[] = [
+  { key: 'goals', multi: true, text: 'What are your main goals right now?', options: ['Grow revenue','Improve operational efficiency','Improve customer service','Reduce costs','Improve compliance and risk management',OTHER_OPTION] },
+  { key: 'challenges', multi: true, text: 'What are your biggest challenges?', options: ['Finding information','Too many tools and systems','Manual and repetitive work','Slow decision-making','Team capacity and workload','Keeping knowledge when people leave',OTHER_OPTION] },
+  { key: 'whoUses', multi: false, text: 'Who will be using OI?', options: ['Just me','A small team (1–10 people)','Multiple teams (11–50 people)','Most of the organisation (51–250 people)','Entire organisation (250+ people)','Not sure yet'] },
+  { key: 'tools', multi: true, text: 'What systems and tools do you currently use?', options: ['Microsoft 365','Google Workspace','Slack','Teams','Salesforce','HubSpot','Xero','SAP','Notion','Jira',OTHER_OPTION,"We don't use many tools yet"] },
+  { key: 'infoManagement', multi: true, text: 'How do you currently manage information?', options: ['Emails','Shared drives (e.g. OneDrive, Google Drive)','Documents and folders','CRM or business systems','Team chat (e.g. Teams, Slack, WhatsApp)','Individual files and spreadsheets',"Not sure / it's spread across multiple places"] },
+  { key: 'workTypes', multi: true, text: 'What type of work would you like OI to help with?', options: ['Research and analysis','Meetings and follow-up','Document creation and management','Project and task management','Customer and stakeholder support','Data and reporting','Process improvement and automation','Compliance and risk',OTHER_OPTION] },
+  { key: 'successLooks', multi: true, text: 'What does success look like for you?', options: ['Save time and reduce manual work','Improve decision-making','Increase productivity and capacity','Better customer experience','Reduce costs','Stronger compliance and governance',OTHER_OPTION] },
+  { key: 'timeline', multi: false, text: 'When would you like to get started?', options: ['As soon as possible','Within the next 1–3 months','Within 3–6 months','Later this year','Just exploring for now'] },
+  { key: 'notes', freeText: true, text: 'Anything else I should know?', placeholder: "Is there anything you'd like to share about your organisation, plans or the challenges you're facing?" },
 ];
 const DEFAULT_HOOK = { driverName: 'Knowledge Capture', question: "How much of your team's best thinking is captured somewhere reusable?", options: [{ text: 'Well captured and reusable', level: 2, why: 'Strong knowledge capture is a real asset.' },{ text: 'Some of it, not consistently', level: 1, why: 'Partial capture is common at this stage.' },{ text: 'Mostly known only by individuals', level: 0, why: 'Knowledge concentrated in individuals is the most common risk at this size.' },{ text: 'Not sure', level: 0, why: 'Worth mapping directly.' }] };
 const INDUSTRY_HOOKS: Record<string, typeof DEFAULT_HOOK> = {
@@ -119,11 +125,54 @@ const GREETING_TEMPLATES = [
   (n: string, t: string, r: string, c: string, rs: string) => `${n}, good ${t}. I've cleared your inbox and diary for today, pulled together your ${r}, and scheduled ${c} for 3pm ${rs}. Where should I focus next?`,
 ];
 const MOMENT_LINES: { t: string; cls: string }[] = [
-  { t: 'Now imagine this wasn’t a demo.', cls: 'lead' },
-  { t: 'Imagine if I understood your company this well.', cls: '' },
-  { t: 'Your people, meetings, documents, customers, projects, decisions and everything your company has learned.', cls: 'muted' },
-  { t: 'That’s when I stop being a demonstration.', cls: 'muted' },
-  { t: 'I become part of your team.', cls: 'accent' },
+  { t: 'In the last few minutes, we’ve looked at performance, prepared for a meeting and joined information across several parts of Copperleaf.', cls: '' },
+  { t: 'Now imagine if everything we’d just worked with belonged to your organisation.', cls: '' },
+  { t: 'That’s what OI can do for you.', cls: 'accent' },
+];
+const MOMENT_FEATURES: { icon: string; title: string; text: string }[] = [
+  { icon: 'book', title: 'All your knowledge', text: 'Connected and available in seconds' },
+  { icon: 'bolt', title: 'Your team prepared', text: 'With the right information at the right time' },
+  { icon: 'briefcase', title: 'Real work completed', text: 'Not just answers, but outcomes' },
+];
+const HOW_IT_WORKS: { icon: string; title: string; text: string }[] = [
+  { icon: 'search', title: 'I learn about your organisation', text: 'You give me a few basic details, I research what I can and ask you a few quick questions.' },
+  { icon: 'file', title: 'I show you what I understand', text: 'You’ll get a personalised Operational Intelligence Brief based on my research and your answers.' },
+  { icon: 'calendar', title: 'You decide whether we work together', text: 'If you like what you see, you can invite me to work with you for the next 7 days — FREE.' },
+  { icon: 'shield', title: 'No obligation', text: 'You’re in control. You can stop at any time.' },
+];
+const SEVEN_DAY_ITEMS: { icon: string; title: string; text: string }[] = [
+  { icon: 'book', title: 'Learn', text: 'Understand your organisation and help you achieve real results.' },
+  { icon: 'link', title: 'Connect', text: 'Bring together your people, your information and your tools' },
+  { icon: 'briefcase', title: 'Work', text: 'Complete tasks, support meetings and provide insights' },
+  { icon: 'chart', title: 'Measure', text: 'Track activity and identify what’s working' },
+  { icon: 'bolt', title: 'Prove', text: 'Show you the real value and what I’m capable of' },
+];
+const SEVEN_DAY_TODO = [
+  'Use OI as you would with a new team member',
+  'Give me access to the information and tools you want me to work with',
+  'Talk, chat or assign tasks whenever you need support',
+  'Review my updates and give feedback',
+];
+const EXPERIENCE_STATS: { icon: string; value: number; label: string; text: string }[] = [
+  { icon: 'check', value: 28, label: 'Tasks completed', text: 'From meetings, emails and internal requests' },
+  { icon: 'file', value: 42, label: 'Documents analysed', text: 'Reports, policies, emails and project files' },
+  { icon: 'question', value: 67, label: 'Questions answered', text: 'From you and your team' },
+  { icon: 'calendar', value: 6, label: 'Meetings supported', text: 'Summaries, actions and follow-ups' },
+  { icon: 'lightbulb', value: 12, label: 'Insights identified', text: 'Opportunities and recommendations' },
+  { icon: 'gear', value: 4, label: 'Workflows improved', text: 'Automations and better processes' },
+];
+const OTHER_OUTCOMES = [
+  { title: 'Time released', text: '~100 hours/month' },
+  { title: 'Faster decisions', text: 'Improved data access' },
+  { title: 'Better knowledge', text: 'Connected active teams' },
+  { title: 'Better customer experience', text: 'Quicker, more relevant responses' },
+];
+const WELCOME_CHECKLIST = ['Confirm your package','Set up your OI Consultants','Connect your tools and integrations','Align your workforce to your goals'];
+const WELCOME_TIMELINE = [
+  { when: 'Today', text: 'Confirm your order and complete onboarding' },
+  { when: 'Within 24 hours', text: 'Set up your OI Consultants and integrations' },
+  { when: 'Within 3 days', text: 'Your OI Workforce is fully working with you' },
+  { when: 'Ongoing', text: 'Review progress and add more OI Consultants' },
 ];
 const LOADING_LINES = ["I'm creating your organisation…","I'm preparing your departments…","I'm setting up your Organisation Memory…","I'm preparing your Executive Office…","I'm creating your first OI Consultants…","I'm setting you up on secure cloud…","I'm getting everything ready…"];
 const WORKFORCE_LIBRARY: Record<string, { title: string; color: string; benchmark: number; reason: string }> = {
@@ -159,19 +208,19 @@ const INDUSTRY_WORKFORCE: Record<string, string[]> = {
   Education: ['Elizabeth Turner','Sarah Mitchell','Kofi Boateng','Priya Sharma'],
   Mining: ['Elizabeth Turner','Kwame Asante','Abena Owusu','Emeka Nwosu'],
 };
-const STAFFING_PHRASE: Record<string, string> = {
-  'Stretched thin, doing more than they should': 'stretched thin right now',
-  'About right, but using some manual systems & processes': 'about the right size, though a lot of the work still runs through manual systems',
-  'Well staffed, but could be a little more efficient': 'well staffed, with room to run more efficiently',
-  'Hard to describe at the moment': "sized appropriately, though that's not fully clear yet",
-};
-const GROWTH_PHRASE: Record<string, string> = {
-  'Attracting new customers': 'attracting new customers',
-  'Converting interest into sales': 'converting interest into actual sales',
-  'Retaining existing customers': 'retaining the customers you already have',
-  'Operational capacity to meet demand': 'building the operational capacity to meet demand',
-  'Not yet clear': "not yet clear — worth a quick check with whoever owns customer relationships",
-};
+function staffingPhrase(a: Record<string, string | string[]>): string {
+  if (hasAnswer(a,'challenges','Team capacity and workload')) return 'stretched thin right now';
+  if (hasAnswer(a,'challenges','Manual and repetitive work')) return 'about the right size, though a lot of the work still runs through manual systems';
+  if (hasAnswer(a,'whoUses','Just me')) return 'a team of one, for now';
+  return "sized appropriately, though that's not fully clear yet";
+}
+function growthPhrase(a: Record<string, string | string[]>): string {
+  if (hasAnswer(a,'goals','Grow revenue')) return 'growing revenue';
+  if (hasAnswer(a,'goals','Improve customer service')) return 'improving customer service';
+  if (hasAnswer(a,'goals','Reduce costs')) return 'reducing costs';
+  if (hasAnswer(a,'challenges','Team capacity and workload')) return 'building the operational capacity to meet demand';
+  return "not yet clear — worth a quick check with whoever owns customer relationships";
+}
 const HIGH_STAKES = ['Legal','Healthcare','Mining','Construction'];
 const SMALL_SIZES = ['1–10','11–50'];
 const LARGE_SIZES = ['251–1,000','1,000+'];
@@ -228,38 +277,80 @@ const ICONS = {
   bolt: '<path d="M13 2L3 14h8l-1 8 10-12h-8l1-8z"/>',
   download: '<path d="M12 3v12M7 10l5 5 5-5M4 21h16"/>',
   mail: '<rect x="2" y="4" width="20" height="16" rx="2"/><path d="M22 6l-10 7L2 6"/>',
+  shield: '<path d="M12 2l8 4v6c0 5-3.5 8.5-8 10-4.5-1.5-8-5-8-10V6l8-4z"/><path d="M9 12l2 2 4-4"/>',
+  lightbulb: '<path d="M9 18h6M10 22h4M12 2a7 7 0 00-4 12.7c.6.5 1 1.3 1 2.3h6c0-1 .4-1.8 1-2.3A7 7 0 0012 2z"/>',
+  question: '<circle cx="12" cy="12" r="10"/><path d="M9.1 9a3 3 0 115.8 1c0 2-3 2-3 4"/><path d="M12 17h.01"/>',
+  infinity: '<path d="M7 9a3 3 0 100 6 5 5 0 004-2 5 5 0 004 2 3 3 0 100-6 5 5 0 00-4 2 5 5 0 00-4-2z"/>',
+  link: '<path d="M10 14a4 4 0 005.66 0l3-3a4 4 0 00-5.66-5.66l-1 1"/><path d="M14 10a4 4 0 00-5.66 0l-3 3a4 4 0 005.66 5.66l1-1"/>',
+  chart: '<path d="M3 3v18h18"/><path d="M7 15v3M12 11v7M17 7v11"/>',
+  target: '<circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="4"/><circle cx="12" cy="12" r="0.5"/>',
 };
-const OBJECTIVE_ICONS: Record<string, string> = {
-  'Increase revenue growth': '<path d="M3 3v18h18"/><path d="M7 15v3M12 11v7M17 7v11"/>',
-  'Improve team efficiency': ICONS.people,
-  'Reduce operating costs': '<ellipse cx="12" cy="6" rx="7" ry="3"/><path d="M5 6v6c0 1.7 3.1 3 7 3s7-1.3 7-3V6M5 12v6c0 1.7 3.1 3 7 3s7-1.3 7-3v-6"/>',
-  'Better organisation of documents': ICONS.file,
+const GOALS_ICONS: Record<string, string> = {
+  'Grow revenue': ICONS.chart,
+  'Improve operational efficiency': ICONS.bolt,
   'Improve customer service': '<circle cx="9" cy="7" r="3.5"/><path d="M2 21a7 7 0 0114 0M16 11l2 2 4-4"/>',
-  'Strengthen compliance and risk management': '<path d="M12 2l8 4v6c0 5-3.5 8.5-8 10-4.5-1.5-8-5-8-10V6l8-4z"/><path d="M8.5 12l2.5 2.5 4.5-5"/>',
+  'Reduce costs': '<ellipse cx="12" cy="6" rx="7" ry="3"/><path d="M5 6v6c0 1.7 3.1 3 7 3s7-1.3 7-3V6M5 12v6c0 1.7 3.1 3 7 3s7-1.3 7-3v-6"/>',
+  'Improve compliance and risk management': ICONS.shield,
   [OTHER_OPTION]: '<path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/>',
 };
+const QUESTION_ICONS: Record<string, string> = {
+  'Finding information': ICONS.search, 'Too many tools and systems': ICONS.grid, 'Manual and repetitive work': ICONS.gear,
+  'Slow decision-making': ICONS.target, 'Team capacity and workload': ICONS.people, 'Keeping knowledge when people leave': ICONS.book,
+};
+const WHOUSES_PHOTOS: Record<string, string> = {
+  'Just me': IMAGES.avatarConsult2,
+  'A small team (1–10 people)': IMAGES.avatarConsult4,
+  'Multiple teams (11–50 people)': IMAGES.avatarConsult7,
+  'Most of the organisation (51–250 people)': IMAGES.avatarConsult9,
+  'Entire organisation (250+ people)': IMAGES.avatarConsult11,
+};
+const TOOL_ICONS: Record<string, string> = {
+  Slack: '<path d="M8 10h8M8 14h5"/><path d="M21 12c0 4.4-4 8-9 8-1.1 0-2.2-.2-3.2-.5L3 21l1.5-4.3C3.6 15.4 3 13.8 3 12c0-4.4 4-8 9-8s9 3.6 9 8z"/>',
+  Teams: ICONS.people,
+  Salesforce: '<path d="M3 15.5a4 4 0 004 4h10a4 4 0 001-7.9 5 5 0 00-9.6-1.9A4 4 0 003 15.5z"/>',
+  HubSpot: ICONS.bolt,
+  Xero: '<ellipse cx="12" cy="6" rx="7" ry="3"/><path d="M5 6v6c0 1.7 3.1 3 7 3s7-1.3 7-3V6M5 12v6c0 1.7 3.1 3 7 3s7-1.3 7-3v-6"/>',
+  SAP: '<rect x="4" y="4" width="16" height="4" rx="1"/><rect x="4" y="10" width="16" height="4" rx="1"/><rect x="4" y="16" width="16" height="4" rx="1"/>',
+  Notion: ICONS.file,
+  Jira: '<path d="M5 3v18M5 4h11l-2 4 2 4H5"/>',
+  "We don't use many tools yet": ICONS.question,
+};
+const TOOL_COLORS: Record<string, string> = {
+  Slack: '#4A154B', Teams: '#5059C9', Salesforce: '#00A1E0', HubSpot: '#FF7A59', Xero: '#13B5EA',
+  SAP: '#0FAAFF', Notion: '#37352F', Jira: '#0052CC', "We don't use many tools yet": '#5B6472',
+};
+function MultiLogo({ name }: { name: 'ms365' | 'google' }) {
+  if (name === 'ms365') return (
+    <svg width="22" height="22" viewBox="0 0 22 22" aria-hidden="true">
+      <rect x="1" y="1" width="9" height="9" fill="#F35325" /><rect x="12" y="1" width="9" height="9" fill="#81BC06" />
+      <rect x="1" y="12" width="9" height="9" fill="#05A6F0" /><rect x="12" y="12" width="9" height="9" fill="#FFBA08" />
+    </svg>
+  );
+  return (
+    <svg width="22" height="22" viewBox="0 0 22 22" aria-hidden="true">
+      <circle cx="11" cy="4" r="3.4" fill="#4285F4" /><circle cx="18" cy="15" r="3.4" fill="#34A853" />
+      <circle cx="4" cy="15" r="3.4" fill="#FBBC05" /><circle cx="11" cy="11" r="3" fill="#EA4335" />
+    </svg>
+  );
+}
 const SHELL_NAV: [string, string][] = [['My OI', ICONS.myoi],['Command Centre', ICONS.grid],['Projects', ICONS.folder],['Work', ICONS.briefcase],['Documents', ICONS.file],['People', ICONS.people],['Meetings', ICONS.calendar],['Knowledge Bank', ICONS.book],['More', ICONS.more]];
 
-const STEP_LABELS = ['Meet','Play with','We create','Choose role','My OI (Demo)','Imagine if','Work together','Tell us','Quick questions','Your report'];
+const STEP_LABELS = ['Meet','Play with','We create','Choose role','My OI (Demo)','Imagine if','Work together','Tell us','Quick questions','Your report','7-Day Experience','What happened','Value report','Workforce','Investment','Welcome'];
 const SCREEN_STEP: Record<string, number> = {
   intro: 1, industry: 2, 'business-intro': 3, role: 4, connecting: 5, chat: 5, moment: 6, offer: 7, arrange: 7,
   company: 8, discovery: 9, report: 10, 'capacity-report': 10,
+  '7day-start': 11, 'what-happened': 12, 'value-report': 13, 'build-workforce': 14, pricing: 15, welcome: 16,
 };
 
 // Helpers
 function pick<T>(arr: T[]): T { return arr[Math.floor(Math.random() * arr.length)]; }
 function toArr(v: string | string[] | undefined): string[] { if (!v) return []; return Array.isArray(v) ? v : [v]; }
-function answerText(a: Record<string, string | string[]>, k: string, fb: string): string {
+function answerText(a: Record<string, string | string[]>, k: string, fb: string, keepCase = false): string {
   const arr = toArr(a[k]); if (!arr.length) return fb;
-  const l = arr.map(x => x.toLowerCase());
+  const l = keepCase ? arr : arr.map(x => x.toLowerCase());
   return l.length === 1 ? l[0] : l.slice(0,-1).join(', ') + ' and ' + l[l.length-1];
 }
 function hasAnswer(a: Record<string, string | string[]>, k: string, v: string): boolean { return toArr(a[k]).includes(v); }
-function phraseJoin(a: Record<string, string | string[]>, k: string, map: Record<string,string>, fb: string): string {
-  const arr = toArr(a[k]); if (!arr.length) return fb;
-  const p = arr.map(x => map[x] || x.toLowerCase());
-  return p.length === 1 ? p[0] : p.slice(0,-1).join(', ') + ' and ' + p[p.length-1];
-}
 function timeOfDay(): string { const h = new Date().getHours(); return h < 12 ? 'morning' : h < 18 ? 'afternoon' : 'evening'; }
 function fmtMoney(gbp: number, cur: Currency): string { const c = CURRENCY_CONFIG[cur]; return c.symbol + Math.round(gbp * c.rate).toLocaleString(); }
 const STOPWORDS = new Set(['a','an','the','is','are','of','in','on','to','this','that','our','my','your','it','be','do']);
@@ -293,7 +384,9 @@ export default function DavidModal({ isOpen, onClose }: { isOpen: boolean; onClo
   const [connectingText, setConnectingText] = useState('Connecting you to a demonstration organisation…');
   const [momentCount, setMomentCount] = useState(0);
   const [invite, setInvite] = useState({ name: '', email: '', sent: false });
-  const [company, setCompany] = useState({ company: '', website: '', industry: '', country: '', size: '', role: '', none: false });
+  const [company, setCompany] = useState({ company: '', website: '', email: '', industry: '', country: '', size: '', role: '', none: false });
+  const [orgStage, setOrgStage] = useState<'form' | 'searching' | 'found'>('form');
+  const [orgPct, setOrgPct] = useState(0);
   const [discIdx, setDiscIdx] = useState(0);
   const [discSel, setDiscSel] = useState<string[]>([]);
   const [otherText, setOtherText] = useState('');
@@ -329,7 +422,8 @@ export default function DavidModal({ isOpen, onClose }: { isOpen: boolean; onClo
     if (isOpen) {
       setScreen('intro'); setNameVal(''); setSelIndustry(''); setShowAllIndustries(false); setSelRole('');
       setChatMsgs([]); setContinueVisible(false); setListening(false); setMomentCount(0);
-      setInvite({ name: '', email: '', sent: false }); setCompany({ company: '', website: '', industry: '', country: '', size: '', role: '', none: false });
+      setInvite({ name: '', email: '', sent: false }); setCompany({ company: '', website: '', email: '', industry: '', country: '', size: '', role: '', none: false });
+      setOrgStage('form'); setOrgPct(0);
       setDiscIdx(0); setDiscSel([]); setOtherText(''); setLoadingLine(''); setLoadingPct(0); setWorkforceSelection([]);
       setVoiceGender(''); setAvatarPhotoSel(null); setPersonalName(''); setPersonalStyle(''); setShowAvatarSection(false); setCrData(null);
       sr.current = { name: '', industry: '', position: '', orgAnswers: {}, chatCount: 0, mockBusiness: null, momentStarted: false, activeQuestions: [], usedResponses: new Set() };
@@ -422,7 +516,13 @@ export default function DavidModal({ isOpen, onClose }: { isOpen: boolean; onClo
     later(next, 300);
   }
 
-  // ── Step 8: company details ──
+  // ── Step 8: find the organisation ──
+  function startOrgSearch() {
+    setOrgStage('searching'); setOrgPct(0); let idx = 0; const steps = 5;
+    function step() { idx++; setOrgPct(Math.round((idx/steps)*100)); if (idx>=steps) { later(() => setOrgStage('found'), 350); return; } later(step, 320); }
+    step();
+  }
+  function orgTryAgain() { setOrgStage('form'); }
   function submitCompany() {
     const a = sr.current.orgAnswers;
     a.company = company.none ? (sr.current.name !== 'there' ? sr.current.name + '’s future organisation' : 'Your future organisation') : (company.company.trim() || 'Your organisation');
@@ -436,19 +536,24 @@ export default function DavidModal({ isOpen, onClose }: { isOpen: boolean; onClo
 
   // ── Step 9: quick questions ──
   function startDiscovery() {
-    const hook = INDUSTRY_HOOKS[sr.current.industry] || DEFAULT_HOOK;
-    sr.current.activeQuestions = [...DISCOVERY_QUESTIONS, { key: 'industryHook', multi: false, text: hook.question, options: hook.options.map(o => o.text) }];
+    sr.current.activeQuestions = DISCOVERY_QUESTIONS;
     setDiscIdx(0); setDiscSel([]); setOtherText(''); setScreen('discovery'); speak(sr.current.activeQuestions[0].text);
   }
   function toggleDisc(opt: string) {
-    const q = sr.current.activeQuestions[discIdx];
+    const q = sr.current.activeQuestions[discIdx]; if (q.freeText) return;
     if (!q.multi) { setDiscSel([opt]); return; }
     setDiscSel(prev => prev.includes(opt) ? prev.filter(x => x !== opt) : [...prev, opt]);
   }
+  function discBack() {
+    const prev = discIdx - 1;
+    if (prev < 0) { setOrgStage('found'); setScreen('company'); return; }
+    const q = sr.current.activeQuestions[prev]; const existing = sr.current.orgAnswers[q.key];
+    setDiscIdx(prev); setDiscSel(q.freeText ? [] : toArr(existing)); setOtherText(q.freeText ? String(existing || '') : '');
+  }
   function confirmDisc() {
     const q = sr.current.activeQuestions[discIdx];
-    const vals = discSel.map(v => v === OTHER_OPTION ? otherText.trim() : v).filter(Boolean);
-    sr.current.orgAnswers[q.key] = q.multi ? vals : (vals[0] || '');
+    if (q.freeText) { sr.current.orgAnswers[q.key] = otherText.trim(); }
+    else { const vals = discSel.map(v => v === OTHER_OPTION ? otherText.trim() : v).filter(Boolean); sr.current.orgAnswers[q.key] = q.multi ? vals : (vals[0] || ''); }
     const next = discIdx + 1;
     if (next >= sr.current.activeQuestions.length) { startCapacityReport(); }
     else { setDiscIdx(next); setDiscSel([]); setOtherText(''); speak(sr.current.activeQuestions[next].text); }
@@ -457,69 +562,83 @@ export default function DavidModal({ isOpen, onClose }: { isOpen: boolean; onClo
   // ── Step 10: report ──
   function scoreDrivers(): { name: string; level: number; why: string }[] {
     const a = sr.current.orgAnswers; const ind = sr.current.industry || 'Professional Services';
-    const size = String(a.size || '1–10'); const central = hasAnswer(a,'systems','One central system already');
-    const fragmented = hasAnswer(a,'systems','A few disconnected tools') || hasAnswer(a,'systems','A mix of legacy and modern systems');
-    const informal = hasAnswer(a,'systems','Mostly verbal or informal communication');
-    const st = answerText(a,'systems','a mix of tools'); const stretched = hasAnswer(a,'staffing','Stretched thin, doing more than they should');
-    const manual = hasAnswer(a,'staffing','About right, but using some manual systems & processes'); const efficient = hasAnswer(a,'staffing','Well staffed, but could be a little more efficient');
-    const attracting = hasAnswer(a,'growth','Attracting new customers'); const converting = hasAnswer(a,'growth','Converting interest into sales');
-    const retaining = hasAnswer(a,'growth','Retaining existing customers'); const capC = hasAnswer(a,'growth','Operational capacity to meet demand');
+    const size = String(a.size || '1–10');
+    const toolCount = toArr(a.tools).filter(t => t!==OTHER_OPTION && t!=="We don't use many tools yet").length;
+    const central = hasAnswer(a,'infoManagement','CRM or business systems') && toolCount<=2;
+    const fragmented = toolCount>=3 || hasAnswer(a,'challenges','Too many tools and systems');
+    const informal = hasAnswer(a,'infoManagement','Emails') || hasAnswer(a,'infoManagement',"Not sure / it's spread across multiple places");
+    const st = answerText(a,'tools','a mix of tools',true);
+    const stretched = hasAnswer(a,'challenges','Team capacity and workload'); const manual = hasAnswer(a,'challenges','Manual and repetitive work');
+    const findingInfo = hasAnswer(a,'challenges','Finding information'); const slowDecisions = hasAnswer(a,'challenges','Slow decision-making');
+    const growingRevenue = hasAnswer(a,'goals','Grow revenue'); const custService = hasAnswer(a,'goals','Improve customer service');
+    const reduceCosts = hasAnswer(a,'goals','Reduce costs'); const compliance = hasAnswer(a,'goals','Improve compliance and risk management');
     const hook = INDUSTRY_HOOKS[ind] || DEFAULT_HOOK; const hookAnswer = String(a.industryHook || ''); const hookOpt = hook.options.find(o => o.text === hookAnswer);
     return [
-      { name:'Knowledge Continuity', level: central?2:(fragmented?1:0), why: central?'A central system gives knowledge somewhere to live beyond individual people.':informal?'With mostly verbal coordination, very little knowledge is likely captured.':'With work through '+st+', knowledge is likely still tied to individuals.' },
-      { name:'System Cohesion', level: central?2:(fragmented?1:0), why:'Based on how your team works today: '+st+'.' },
-      { name:'Decision Velocity', level: hasAnswer(a,'objective','Improve team efficiency')?0:1, why: hasAnswer(a,'objective','Improve team efficiency')?'You flagged team efficiency — usually a decision-speed problem more than a headcount one.':'Not your stated top priority, but worth monitoring as you grow.' },
-      { name:'Workforce Leverage', level:(hasAnswer(a,'objective','Reduce operating costs')||SMALL_SIZES.includes(size))?0:1, why: hasAnswer(a,'objective','Reduce operating costs')?'You flagged reducing operating costs — workforce leverage is usually the fastest lever.':'At '+size+' employees, coordination overhead is worth watching.' },
-      { name:'Risk Visibility', level:((HIGH_STAKES.includes(ind)||hasAnswer(a,'objective','Strengthen compliance and risk management'))&&!central)?0:1, why: HIGH_STAKES.includes(ind)?'Higher-stakes industries need risk surfaced earlier, not just at review.':hasAnswer(a,'objective','Strengthen compliance and risk management')?'You flagged compliance and risk — that needs risk surfaced continuously, not at review.':'Standard risk exposure for your industry at this size.' },
+      { name:'Knowledge Continuity', level: central?2:(fragmented?1:0), why: central?'A central system gives knowledge somewhere to live beyond individual people.':informal?'With information spread across emails and individual files, very little knowledge is likely captured.':'With tools like '+st+', knowledge is likely still tied to individuals.' },
+      { name:'System Cohesion', level: central?2:(fragmented?1:0), why:'Based on the tools in use today: '+st+'.' },
+      { name:'Decision Velocity', level: slowDecisions?0:1, why: slowDecisions?'You flagged slow decision-making — usually a visibility problem more than a headcount one.':'Not flagged as a top challenge, but worth monitoring as you grow.' },
+      { name:'Workforce Leverage', level:(reduceCosts||SMALL_SIZES.includes(size))?0:1, why: reduceCosts?'You flagged reducing costs — workforce leverage is usually the fastest lever.':'At '+size+' employees, coordination overhead is worth watching.' },
+      { name:'Risk Visibility', level:((HIGH_STAKES.includes(ind)||compliance)&&!central)?0:1, why: HIGH_STAKES.includes(ind)?'Higher-stakes industries need risk surfaced earlier, not just at review.':compliance?'You flagged compliance and risk management — that needs risk surfaced continuously, not at review.':'Standard risk exposure for your industry at this size.' },
       { name:'Scale Readiness', level: central?(LARGE_SIZES.includes(size)?2:1):0, why: central?'A central system supports growth without a rebuild.':'Worth establishing a central system before headcount grows further.' },
-      { name:'Team Capacity', level: stretched?0:(manual||efficient?1:0), why: stretched?'The team is stretched thin — the fastest gain is rarely more headcount, it\'s removing manual work.':manual?'Team size looks right, but manual processes absorb capacity.':efficient?'Staffing isn\'t the constraint — the bottleneck is more likely speed of decisions and handoffs.':'Hard to know without clearer visibility into where the team\'s time is going.' },
-      { name:'Growth & Retention Exposure', level: attracting?1:(retaining||converting||capC?0:1), why: attracting?'New-customer acquisition is a focus — referral systems are usually the fastest lever.':converting?'A conversion gap usually means interest isn\'t being turned into sales efficiently.':retaining?'Retention gaps are often more expensive than they look.':capC?'Demand isn\'t the problem — fulfilment capacity is.':'Not flagged as a clear constraint yet.' },
+      { name:'Team Capacity', level: stretched?0:(manual?1:0), why: stretched?'Team capacity and workload was flagged — the fastest gain is rarely more headcount, it\'s removing manual work.':manual?'Manual and repetitive work was flagged — processes absorb capacity that could go elsewhere.':'Team capacity wasn\'t flagged as a constraint.' },
+      { name:'Growth & Retention Exposure', level: growingRevenue?1:(custService||reduceCosts?0:1), why: growingRevenue?'Growing revenue is a stated goal — referral and pipeline systems are usually the fastest lever.':custService?'Customer service is a stated goal — service gaps are often more expensive than they look.':findingInfo?'Finding information was flagged as a challenge — that slows everything downstream.':'Not flagged as a clear constraint yet.' },
       { name: hook.driverName, level: hookOpt?hookOpt.level:0, why: hookOpt?hookOpt.why:'Worth mapping directly — this wasn\'t confirmed in discovery.' },
     ];
   }
   function startCapacityReport() {
     const a = sr.current.orgAnswers; const ind = sr.current.industry || 'Professional Services';
-    const companyName = String(a.company || 'Your organisation'); const country = String(a.country || 'your region'); const size = String(a.size || 'a growing team of');
+    const companyName = String(a.company || 'Your organisation'); const country = String(a.country || 'your region');
+    const sizeKnown = Boolean(a.size); const size = String(a.size || 'a growing');
     const profile = INDUSTRY_PROFILES[ind] || INDUSTRY_PROFILES['Professional Services'];
-    const st = answerText(a,'systems','a mix of tools'); const staffingT = phraseJoin(a,'staffing',STAFFING_PHRASE,"sized appropriately"); const growthT = phraseJoin(a,'growth',GROWTH_PHRASE,"not yet clear");
-    const objT = answerText(a,'objective','improve execution');
+    const st = answerText(a,'tools','a mix of tools',true); const staffingT = staffingPhrase(a); const growthT = growthPhrase(a);
+    const objT = answerText(a,'goals','improve execution');
     const levels = ['Early','Developing','Established'];
     const check = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>';
     const driversHTML = scoreDrivers().map(d => '<div class="cr-driver-card"><div class="cr-driver-name">'+d.name+'</div><div class="cr-driver-dots">'+[0,1,2].map(i=>'<span class="'+(i<=d.level?'filled':'')+'"></span>').join('')+'</div><div class="cr-driver-level">'+levels[d.level]+'</div><div class="cr-driver-why">'+d.why+'</div></div>').join('');
     const findings = [
-      { label:'Organisational maturity', text: hasAnswer(a,'systems','One central system already')?'Developing well — you already have a central system in place.':'Developing — core functions exist, but with work through '+st+', knowledge is spread across people.' },
+      { label:'Organisational maturity', text: hasAnswer(a,'infoManagement','CRM or business systems')?'Developing well — you already have a central system in place.':'Developing — core functions exist, but with work through '+st+', knowledge is spread across people.' },
       { label:'Strengths', text:'A clear departmental structure already in place across '+profile.depts.slice(0,3).join(', ')+'.' },
-      { label:'Potential risk', text:'Knowledge tied to individual people is the most common risk at '+size+' employees relying on '+st+'.' },
+      { label:'Potential risk', text:'Knowledge tied to individual people is the most common risk at '+(sizeKnown?size+'-employee':'this size of')+' organisations relying on '+st+'.' },
       { label:'Priority opportunity', text:'The fastest wins are the priorities you already chose: '+objT+'.' },
       { label:'What this could look like in 90 days', text:'A working OI Workforce covering your core departments, actively reducing the manual coordination '+st+' currently requires.' },
       { label:'Suggested next priority', text:'Confirm your organisational structure, then connect the systems your team already uses.' },
     ];
     const findingsHTML = findings.map(f => '<div class="cr-finding">'+check+'<div><div class="cr-finding-label">'+f.label+'</div><div class="cr-finding-text">'+f.text+'</div></div></div>').join('');
-    const summary = companyName+' is a '+size+'-employee '+ind.toLowerCase()+' organisation based in '+country+'. The clearest priorities are '+objT+', and most work runs through '+st+' today. The team is '+staffingT+', and the bigger constraint on the customer side is '+growthT+'.';
+    const summary = companyName+' is a '+(sizeKnown?size+'-employee ':'')+ind.toLowerCase()+' organisation based in '+country+'. The clearest priorities are '+objT+', and most work runs through '+st+' today. The team is '+staffingT+', and the bigger constraint on the customer side is '+growthT+'.';
     const date = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
     setCrData({ company: companyName, country, industry: ind, date, summary, driversHTML, findingsHTML });
     setScreen('report');
     speak('Here is what I understand about '+companyName+'.');
   }
 
-  // ── Next steps: workforce, pricing, setup ──
-  function startBuildWorkforce() {
+  // ── Next steps: 7-day experience, value report, workforce, pricing, setup ──
+  function populateWorkforce() {
     const names = INDUSTRY_WORKFORCE[sr.current.industry] || INDUSTRY_WORKFORCE['Professional Services'];
-    setWorkforceSelection([...names]); setScreen('build-workforce');
+    setWorkforceSelection(prev => prev.length ? prev : [...names]);
+  }
+  function startSevenDay() {
+    populateWorkforce(); setScreen('7day-start');
+    speak('Great! I now understand your organisation, and I\'m ready to start working with you.');
+  }
+  function startWhatHappened() { setScreen('what-happened'); speak('Here\'s what I\'ve done so far.'); }
+  function startValueReport() { setScreen('value-report'); speak('Here\'s what I\'ve learned, what I\'ve done and the value I can bring.'); }
+  function startBuildWorkforce() {
+    populateWorkforce(); setScreen('build-workforce');
     speak('For a '+sr.current.industry+' organisation, here is the OI Workforce I would recommend.');
   }
   function valueLineFor(name: string): string {
     const person = WORKFORCE_LIBRARY[name]; if (!person) return '';
-    const title = person.title.toLowerCase(); const a = sr.current.orgAnswers; const obj = toArr(a.objective);
-    if (title.includes('finance')||title.includes('cfo')) return obj.includes('Reduce operating costs')?'Directly targets the cost reduction you flagged.':'Keeps financial visibility current, not just at month-end.';
-    if (title.includes('operations')||title.includes('warehouse')||title.includes('quality')) return hasAnswer(a,'staffing','Stretched thin, doing more than they should')?'Takes manual coordination off a stretched team.':'Removes fragmented-systems overhead slowing execution.';
-    if (title.includes('hr')||title.includes('people')) return obj.includes('Improve team efficiency')?'Directly supports the team efficiency priority you flagged.':'Keeps workforce risk visible before it becomes a retention problem.';
-    if (title.includes('sales')) { if (hasAnswer(a,'growth','Attracting new customers')) return 'Built for the growth constraint you flagged: attracting new customers.'; if (hasAnswer(a,'growth','Converting interest into sales')) return 'Targets the conversion gap you flagged.'; if (hasAnswer(a,'growth','Retaining existing customers')) return 'Focused on the retention risk you flagged.'; return 'Keeps pipeline and account risk visible before deals are lost.'; }
-    if (title.includes('risk')||title.includes('compliance')||title.includes('legal')) return obj.includes('Strengthen compliance and risk management')?'Directly supports the compliance and risk priority you flagged.':'Surfaces risk earlier than a periodic review would.';
-    if (title.includes('procurement')) return obj.includes('Reduce operating costs')?'Targets supplier cost, supporting the cost reduction you flagged.':'Keeps contract risk visible before renewal deadlines.';
-    if (title.includes('executive')||title.includes('ceo')) return obj.includes('Better organisation of documents')?'Keeps every document, decision and board pack organised in one place.':'Takes the coordination off your plate, so you can focus on '+(obj[0] ? 'what you flagged: '+obj[0].toLowerCase() : 'your top priority')+'.';
+    const title = person.title.toLowerCase(); const a = sr.current.orgAnswers; const obj = toArr(a.goals);
+    if (title.includes('finance')||title.includes('cfo')) return obj.includes('Reduce costs')?'Directly targets the cost reduction you flagged.':'Keeps financial visibility current, not just at month-end.';
+    if (title.includes('operations')||title.includes('warehouse')||title.includes('quality')) return hasAnswer(a,'challenges','Team capacity and workload')?'Takes manual coordination off a stretched team.':'Removes fragmented-systems overhead slowing execution.';
+    if (title.includes('hr')||title.includes('people')) return obj.includes('Improve operational efficiency')?'Directly supports the operational efficiency priority you flagged.':'Keeps workforce risk visible before it becomes a retention problem.';
+    if (title.includes('sales')) { if (growingRevenue(a)) return 'Built for the growth priority you flagged: growing revenue.'; if (obj.includes('Improve customer service')) return 'Targets the customer service priority you flagged.'; return 'Keeps pipeline and account risk visible before deals are lost.'; }
+    if (title.includes('risk')||title.includes('compliance')||title.includes('legal')) return obj.includes('Improve compliance and risk management')?'Directly supports the compliance and risk priority you flagged.':'Surfaces risk earlier than a periodic review would.';
+    if (title.includes('procurement')) return obj.includes('Reduce costs')?'Targets supplier cost, supporting the cost reduction you flagged.':'Keeps contract risk visible before renewal deadlines.';
+    if (title.includes('executive')||title.includes('ceo')) return hasAnswer(a,'challenges','Finding information')?'Keeps every document, decision and board pack organised in one place.':'Takes the coordination off your plate, so you can focus on '+(obj[0] ? 'what you flagged: '+obj[0].toLowerCase() : 'your top priority')+'.';
     return 'Takes the coordination off your plate, so you can focus on '+(obj[0] ? 'what you flagged: '+obj[0].toLowerCase() : 'your top priority')+'.';
   }
+  function growingRevenue(a: Record<string,string|string[]>) { return hasAnswer(a,'goals','Grow revenue'); }
   function calcMonthly(name: string): number { const p = WORKFORCE_LIBRARY[name]; return p ? Math.round((p.benchmark/12)*OI_PRICING_PCT) : 0; }
   function startLoading() {
     setScreen('loading'); let idx = 0;
@@ -531,15 +650,24 @@ export default function DavidModal({ isOpen, onClose }: { isOpen: boolean; onClo
 
   const totalOI = workforceSelection.reduce((s,n) => s+calcMonthly(n), 0);
   const totalHuman = workforceSelection.reduce((s,n) => { const p=WORKFORCE_LIBRARY[n]; return s+(p?Math.round(p.benchmark/12):0); }, 0);
+  const replacementValue = totalHuman*12;
+  const capabilityValue = Math.round(replacementValue*1.5);
+  const productiveValue = Math.round(replacementValue*1.8);
+  const annualOIWithDiscount = Math.round(totalOI*12*0.9);
 
   const biz = sr.current.mockBusiness;
   const currentDiscQ = sr.current.activeQuestions[discIdx];
-  const discNeedsOther = discSel.includes(OTHER_OPTION) && !otherText.trim();
+  const discNeedsOther = !currentDiscQ?.freeText && discSel.includes(OTHER_OPTION) && !otherText.trim();
   const unusedResp = RESPONSES.filter(r => !sr.current.usedResponses.has(r.prompt));
   const quickPrompts = [...unusedResp.filter(r => r.roles.includes(sr.current.position)), ...unusedResp.filter(r => !r.roles.includes(sr.current.position))].slice(0,4);
-  const stepNum = SCREEN_STEP[screen] || 10;
+  const stepNum = SCREEN_STEP[screen] || 16;
   const isNextSteps = !SCREEN_STEP[screen];
   const userInitials = initialsOf(sr.current.name === 'there' ? '' : sr.current.name);
+  function sevenDayRange(): string {
+    const start = new Date(); const end = new Date(); end.setDate(end.getDate()+6);
+    const fmt = (d: Date) => d.toLocaleDateString('en-GB', { day: 'numeric', month: 'long' });
+    return fmt(start)+' – '+fmt(end)+', '+end.getFullYear();
+  }
 
   const sc = (name: string) => screen === name;
 
@@ -552,8 +680,8 @@ export default function DavidModal({ isOpen, onClose }: { isOpen: boolean; onClo
         <div className="david-topbar">
           <div className="oi-top-avatar"><img src={PERSONAL_OI_PHOTO} alt="" /><span className="live-dot"></span></div>
           <div className="david-topbar-text"><strong>Personal OI</strong><span>Your OI Consultant</span></div>
-          <div className="oi-stepper" aria-label={'Step '+stepNum+' of 10'}>
-            <div className="oi-stepper-label"><b>{isNextSteps ? 'Next steps' : 'Step '+stepNum+' of 10'}</b>{!isNextSteps && <span> &middot; {STEP_LABELS[stepNum-1]}</span>}</div>
+          <div className="oi-stepper" aria-label={'Step '+stepNum+' of 16'}>
+            <div className="oi-stepper-label"><b>{isNextSteps ? 'Next steps' : 'Step '+stepNum+' of 16'}</b>{!isNextSteps && <span> &middot; {STEP_LABELS[stepNum-1]}</span>}</div>
             <div className="oi-stepper-track">{STEP_LABELS.map((l,i) => <span key={l} className={i < stepNum ? 'done' : ''}></span>)}</div>
           </div>
           {hasSpeech && (
@@ -662,7 +790,7 @@ export default function DavidModal({ isOpen, onClose }: { isOpen: boolean; onClo
                   <span className="oi-shell-ico"><Ico d={ICONS.gear} size={16} /></span>
                   <span className="oi-shell-me">{userInitials}</span>
                 </div>
-                <div className="oi-david-card">
+                <div className="oi-david-card" style={{ backgroundImage: 'linear-gradient(100deg, rgba(11,30,63,.94) 0%, rgba(17,32,58,.8) 45%, rgba(17,32,58,.25) 100%), url('+(INDUSTRY_PHOTOS[sr.current.industry] || OFFICE_PHOTO)+')' }}>
                   <img src={DAVID_PHOTO} alt="David, your Executive OI" />
                   <div className="oi-david-text">
                     <strong>David <span className="oi-online"><i></i>Online</span></strong>
@@ -702,43 +830,55 @@ export default function DavidModal({ isOpen, onClose }: { isOpen: boolean; onClo
           <div className={'david-screen oi-screen oi-center'+(sc('moment')?' active':'')} data-screen="moment">
             <div className="oi-imagine">
               <ConsultantHead />
+              <div className="oi-head" style={{ marginBottom:16 }}><h3>Imagine&hellip;</h3><p>Now picture this working for your organisation.</p></div>
               <div className="oi-imagine-body">
                 <img className="oi-imagine-photo" src={PERSONAL_OI_PHOTO} alt="" />
                 <div className="oi-imagine-lines">
                   {MOMENT_LINES.slice(0, momentCount).map((l,i) => <p key={i} className={'oi-line '+l.cls}>{l.t}</p>)}
                 </div>
               </div>
-              <div className={'oi-imagine-actions'+(momentCount >= MOMENT_LINES.length ? ' show' : '')}>
-                <button type="button" className="oi-btn oi-btn-blue" onClick={() => setScreen('offer')}>Continue <Ico d={ICONS.arrow} size={16} sw={2} /></button>
+              <div className="oi-feature-photo" style={{ backgroundImage: 'linear-gradient(100deg, rgba(0,27,92,.88) 0%, rgba(0,27,92,.55) 48%, rgba(0,27,92,.15) 100%), url('+(INDUSTRY_PHOTOS[sr.current.industry] || OFFICE_PHOTO)+')' }}>
+                <div className="oi-feature-rows">
+                  {MOMENT_FEATURES.map(f => (
+                    <div key={f.title} className="oi-feature-row"><span className="oi-feature-icon"><Ico d={ICONS[f.icon as keyof typeof ICONS]} size={18} /></span><div><strong>{f.title}</strong><span>{f.text}</span></div></div>
+                  ))}
+                </div>
+                <div className="oi-infinity-banner"><span className="oi-feature-icon"><Ico d={ICONS.infinity} size={22} /></span><p>A workforce that understands your organisation, uses your knowledge and helps your people do more of what matters.</p></div>
               </div>
-              <svg className="oi-imagine-wave" viewBox="0 0 600 60" preserveAspectRatio="none" aria-hidden="true"><path d="M0 30 C 120 0, 220 60, 340 30 S 520 0, 600 26 V60 H0z" /></svg>
+              <div className={'oi-imagine-actions'+(momentCount >= MOMENT_LINES.length ? ' show' : '')} style={{ display:'flex', justifyContent:'space-between', alignItems:'center', gap:10 }}>
+                <button type="button" className="oi-btn oi-btn-outline" onClick={() => setScreen('chat')}><Ico d={ICONS.back} size={16} sw={2} /> Back</button>
+                <button type="button" className="oi-btn oi-btn-blue" onClick={() => setScreen('offer')}>Show me what this could look like for my organisation <Ico d={ICONS.arrow} size={16} sw={2} /></button>
+              </div>
             </div>
           </div>
 
-          {/* 7 · Shall we work together? */}
+          {/* 7 · Would you like me to come and work with you? */}
           <div className={'david-screen oi-screen'+(sc('offer')?' active':'')} data-screen="offer">
             <div className="oi-card oi-narrow">
               <ConsultantHead />
-              <h3 className="oi-offer-q">Would you like me to come and work with you for the next 14 days &mdash; <span>FREE</span>?</h3>
-              <div className="oi-offer-grid">
-                <div className="oi-offer-opt">
-                  <span className="oi-offer-icon"><Ico d={ICONS.bolt} size={26} /></span>
-                  <strong>Yes, come and work with us.</strong>
-                  <p>Start our 14-day OI Experience.</p>
-                  <button type="button" className="oi-btn oi-btn-blue oi-btn-block" onClick={() => setScreen('company')}>Start 14-day Experience</button>
-                </div>
-                <div className="oi-offer-opt">
-                  <span className="oi-offer-icon"><Ico d={ICONS.people} size={26} /></span>
-                  <strong>I&rsquo;d like to involve my organisation.</strong>
-                  <p>Bring a colleague or decision-maker into the conversation.</p>
-                  <button type="button" className="oi-btn oi-btn-outline oi-btn-block" onClick={() => setScreen('arrange')}>Arrange a conversation</button>
-                </div>
+              <h3 className="oi-card-title" style={{ textAlign:'center', fontSize:22 }}>Would you like me to come and work with you?</h3>
+              <p className="oi-card-sub" style={{ textAlign:'center' }}>First, let me get to know your organisation.</p>
+              <p style={{ fontSize:14, color:'#31394A', lineHeight:1.6, marginBottom:20 }}>I can quickly research your organisation, ask you a few short questions and show you what I understand. You&rsquo;ll get a personalised Operational Intelligence Brief that you can review, download and even share with your team. If you like what you see, you can then invite me to work with you for the next 7 days &mdash; <strong>FREE</strong> &mdash; so I can show you what I can actually do for you.</p>
+              <div className="oi-howitworks">
+                <div className="oi-howitworks-title">Here&rsquo;s how it works</div>
+                {HOW_IT_WORKS.map((s,i) => (
+                  <div key={s.title} className="oi-step-row">
+                    <span className="oi-step-num">{i+1}</span>
+                    <span className="oi-feature-icon"><Ico d={ICONS[s.icon as keyof typeof ICONS]} size={17} /></span>
+                    <div><strong>{s.title}</strong><span>{s.text}</span></div>
+                  </div>
+                ))}
               </div>
-              <button type="button" className="oi-link-btn" onClick={onClose}>Not right now</button>
+              <div style={{ display:'flex', gap:10, marginTop:18 }}>
+                <button type="button" className="oi-btn oi-btn-outline" onClick={() => setScreen('moment')}><Ico d={ICONS.back} size={16} sw={2} /> Back</button>
+                <button type="button" className="oi-btn oi-btn-blue" style={{ flex:1 }} onClick={() => { setOrgStage('form'); setScreen('company'); }}>Get to know my organisation <Ico d={ICONS.arrow} size={16} sw={2} /></button>
+              </div>
+              <button type="button" className="oi-link-btn" onClick={() => setScreen('arrange')}>Prefer to loop in a colleague first?</button>
+              <button type="button" className="oi-link-btn" onClick={onClose}>I&rsquo;m not ready yet</button>
             </div>
           </div>
 
-          {/* 7b · Arrange a conversation */}
+          {/* 7b · Arrange a conversation (secondary entry point) */}
           <div className={'david-screen oi-screen'+(sc('arrange')?' active':'')} data-screen="arrange">
             <div className="oi-card oi-narrow oi-form">
               <ConsultantHead />
@@ -756,7 +896,7 @@ export default function DavidModal({ isOpen, onClose }: { isOpen: boolean; onClo
                   <span className="oi-offer-icon"><Ico d={ICONS.mail} size={26} /></span>
                   <h3 className="oi-card-title">Invitation on its way</h3>
                   <p className="oi-card-sub">I&rsquo;ll be in touch with {invite.name.trim() || invite.email} to find a time that works. In the meantime, you can start the experience yourself.</p>
-                  <button type="button" className="oi-btn oi-btn-blue oi-btn-block" onClick={() => setScreen('company')}>Start 14-day Experience</button>
+                  <button type="button" className="oi-btn oi-btn-blue oi-btn-block" onClick={() => { setOrgStage('form'); setScreen('company'); }}>Start my 7-Day Experience</button>
                   <button type="button" className="oi-link-btn" onClick={onClose}>Close for now</button>
                 </div>
               )}
@@ -766,51 +906,134 @@ export default function DavidModal({ isOpen, onClose }: { isOpen: boolean; onClo
           {/* 8 · Tell us about your company */}
           <div className={'david-screen oi-screen'+(sc('company')?' active':'')} data-screen="company">
             <div className="oi-card oi-narrow oi-form">
-              <ConsultantHead />
-              <h3 className="oi-card-title">Tell us about your company</h3>
-              <form className="oi-form-grid" onSubmit={e => { e.preventDefault(); submitCompany(); }}>
-                <label className="oi-row"><span>Company name</span><input type="text" value={company.company} disabled={company.none} onChange={e => setCompany(c => ({ ...c, company: e.target.value }))} placeholder="Your company" /></label>
-                <label className="oi-row"><span>Website <em>(optional)</em></span><input type="text" value={company.website} disabled={company.none} onChange={e => setCompany(c => ({ ...c, website: e.target.value }))} placeholder="https://yourcompany.com" /></label>
-                <label className="oi-row"><span>Industry</span>
-                  <select value={company.industry || sr.current.industry} onChange={e => setCompany(c => ({ ...c, industry: e.target.value }))}>{Object.keys(INDUSTRY_ICONS).map(o => <option key={o} value={o}>{o}</option>)}</select>
-                </label>
-                <label className="oi-row"><span>Country / Region</span>
-                  <select value={company.country} onChange={e => setCompany(c => ({ ...c, country: e.target.value }))}><option value="">Select</option>{COUNTRY_OPTIONS.map(o => <option key={o} value={o}>{o}</option>)}</select>
-                </label>
-                <label className="oi-row"><span>Company size</span>
-                  <select value={company.size} onChange={e => setCompany(c => ({ ...c, size: e.target.value }))}><option value="">Select</option>{SIZE_OPTIONS.map(o => <option key={o} value={o}>{o} people</option>)}</select>
-                </label>
-                <label className="oi-row"><span>Your role</span>
-                  <select value={company.role} onChange={e => setCompany(c => ({ ...c, role: e.target.value }))}><option value="">Select</option>{ROLE_OPTIONS.map(o => <option key={o} value={o}>{o}</option>)}</select>
-                </label>
-                <label className="oi-check"><input type="checkbox" checked={company.none} onChange={e => setCompany(c => ({ ...c, none: e.target.checked }))} /><span>I don&rsquo;t have a company yet</span></label>
-                <button type="submit" className="oi-btn oi-btn-blue oi-btn-block" disabled={!company.none && !company.company.trim()}>Continue <Ico d={ICONS.arrow} size={16} sw={2} /></button>
-              </form>
+              <div className="oi-org-hero" style={{ backgroundImage: 'linear-gradient(180deg, rgba(0,27,92,.2) 0%, rgba(0,27,92,.82) 100%), url('+OFFICE_PHOTO+')' }}>
+                <img className="oi-org-hero-photo" src={PERSONAL_OI_PHOTO} alt="" />
+                <div className="oi-org-hero-name"><strong>Personal OI</strong><span>Your OI Consultant</span></div>
+              </div>
+              {orgStage === 'form' && (<>
+                <h3 className="oi-card-title">Let me find your organisation.</h3>
+                <p className="oi-card-sub">Tell me the name of your organisation and if possible, your website or work email. It will search and find publicly available information to build an initial understanding of your organisation.</p>
+                <form className="oi-form-grid" onSubmit={e => { e.preventDefault(); startOrgSearch(); }}>
+                  <label className="oi-row"><span>Organisation name</span><input type="text" value={company.company} disabled={company.none} onChange={e => setCompany(c => ({ ...c, company: e.target.value }))} placeholder="Rockstone's Office" /></label>
+                  <label className="oi-row"><span>Website <em>(optional)</em></span><input type="text" value={company.website} disabled={company.none} onChange={e => setCompany(c => ({ ...c, website: e.target.value }))} placeholder="https://yourcompany.com" /></label>
+                  <label className="oi-row"><span>Work email <em>(optional)</em></span><input type="text" value={company.email} disabled={company.none} onChange={e => setCompany(c => ({ ...c, email: e.target.value }))} placeholder="name@yourcompany.com" /></label>
+                  <label className="oi-row"><span>Country / Region</span>
+                    <select value={company.country} onChange={e => setCompany(c => ({ ...c, country: e.target.value }))}><option value="">Select</option>{COUNTRY_OPTIONS.map(o => <option key={o} value={o}>{o}</option>)}</select>
+                  </label>
+                  <label className="oi-check"><input type="checkbox" checked={company.none} onChange={e => setCompany(c => ({ ...c, none: e.target.checked }))} /><span>I don&rsquo;t have a company yet</span></label>
+                  <button type="submit" className="oi-btn oi-btn-blue oi-btn-block" disabled={!company.none && !company.company.trim()}><Ico d={ICONS.search} size={16} sw={2} /> Find my organisation <Ico d={ICONS.arrow} size={16} sw={2} /></button>
+                </form>
+                <button type="button" className="oi-link-btn" onClick={() => setScreen('offer')}>&larr; Back</button>
+              </>)}
+              {orgStage === 'searching' && (
+                <div className="david-connecting">
+                  <div className="david-spinner"></div>
+                  <p>Give me a moment&hellip; I&rsquo;m searching and gathering publicly available information about your organisation.</p>
+                  <div className="david-loading-track" style={{ marginTop:16 }}><div className="david-loading-fill" style={{ width:orgPct+'%' }}></div></div>
+                </div>
+              )}
+              {orgStage === 'found' && (<>
+                <h3 className="oi-card-title">I think I&rsquo;ve found you.</h3>
+                <div className="oi-found-card">
+                  <span className="oi-feature-icon oi-found-icon"><Ico d={INDUSTRY_ICONS[company.industry || sr.current.industry] || ICONS.store} size={22} /></span>
+                  <div className="oi-found-text">
+                    <strong>{company.none ? (sr.current.name !== 'there' ? sr.current.name + '’s future organisation' : 'Your future organisation') : (company.company.trim() || 'Your organisation')}</strong>
+                    <span>{(company.industry || sr.current.industry || 'Professional Services')} &middot; {company.country || 'your region'}</span>
+                    <div className="oi-found-tags"><span className="oi-chip">LinkedIn</span><span className="oi-chip">Facebook</span><span className="oi-chip">Company news</span></div>
+                  </div>
+                </div>
+                <div className="oi-form-grid" style={{ marginTop:16 }}>
+                  <label className="oi-row"><span>Industry</span>
+                    <select value={company.industry || sr.current.industry} onChange={e => setCompany(c => ({ ...c, industry: e.target.value }))}>{Object.keys(INDUSTRY_ICONS).map(o => <option key={o} value={o}>{o}</option>)}</select>
+                  </label>
+                  <label className="oi-row"><span>Company size</span>
+                    <select value={company.size} onChange={e => setCompany(c => ({ ...c, size: e.target.value }))}><option value="">Select</option>{SIZE_OPTIONS.map(o => <option key={o} value={o}>{o} people</option>)}</select>
+                  </label>
+                  <label className="oi-row"><span>Your role</span>
+                    <select value={company.role} onChange={e => setCompany(c => ({ ...c, role: e.target.value }))}><option value="">Select</option>{ROLE_OPTIONS.map(o => <option key={o} value={o}>{o}</option>)}</select>
+                  </label>
+                </div>
+                <p className="oi-found-q">Is this your organisation?</p>
+                <div style={{ display:'flex', gap:10 }}>
+                  <button type="button" className="oi-btn oi-btn-outline oi-btn-block" onClick={orgTryAgain}>No, try again</button>
+                  <button type="button" className="oi-btn oi-btn-blue oi-btn-block" onClick={submitCompany}>Yes, that&rsquo;s us</button>
+                </div>
+              </>)}
             </div>
           </div>
 
-          {/* 9 · A few quick questions */}
+          {/* 9 · Whilst I'm getting to know your company */}
           <div className={'david-screen oi-screen'+(sc('discovery')?' active':'')} data-screen="discovery">
             {currentDiscQ && (
               <div className="oi-card oi-narrow">
-                <ConsultantHead />
                 <p className="oi-q-intro">Whilst I&rsquo;m getting to know your company, let me ask you&hellip;</p>
-                <div className="oi-q-count">Question {discIdx+1} of {sr.current.activeQuestions.length}</div>
-                <h3 className="oi-q-text">{currentDiscQ.text}</h3>
-                <p className="oi-q-hint">{currentDiscQ.multi ? 'Choose one or more.' : 'Choose one.'}</p>
-                <div className="oi-opt-grid">
-                  {currentDiscQ.options.map(opt => {
-                    const on = discSel.includes(opt); const icon = currentDiscQ.key === 'objective' ? OBJECTIVE_ICONS[opt] : '';
-                    return (
-                      <button key={opt} type="button" className={'oi-opt'+(on?' selected':'')+(opt===OTHER_OPTION?' wide':'')} aria-pressed={on} onClick={() => toggleDisc(opt)}>
-                        {on ? <span className="oi-opt-check"><Ico d={ICONS.check} size={13} sw={3} /></span> : icon ? <span className="oi-opt-icon"><Ico d={icon} size={20} /></span> : <span className="oi-opt-dot"></span>}
-                        <span>{opt}</span>
-                      </button>
-                    );
-                  })}
+                <div className="oi-q-row">
+                  <div className="oi-q-avatar">
+                    <img src={PERSONAL_OI_PHOTO} alt="" />
+                    <strong>Personal OI</strong>
+                    <em>Your OI Consultant</em>
+                  </div>
+                  <div className="oi-q-bubble">
+                    <div className="oi-q-count">Question {discIdx+1} of {sr.current.activeQuestions.length}</div>
+                    <h3 className="oi-q-text">{currentDiscQ.text}</h3>
+                    <p className="oi-q-hint">{currentDiscQ.freeText ? 'Optional, but every detail helps me prepare for you.' : currentDiscQ.multi ? 'You can select a few, or tell me in your own words.' : 'Choose the option that fits best.'}</p>
+                  </div>
                 </div>
-                {discSel.includes(OTHER_OPTION) && <input className="oi-other-input" type="text" placeholder="Tell me what matters most…" value={otherText} onChange={e => setOtherText(e.target.value)} autoFocus />}
-                <button type="button" className="oi-btn oi-btn-blue oi-btn-block" disabled={discSel.length===0 || discNeedsOther} onClick={confirmDisc}>Continue <Ico d={ICONS.arrow} size={16} sw={2} /></button>
+                {currentDiscQ.freeText ? (
+                  <div>
+                    <textarea className="oi-other-input oi-textarea" placeholder={currentDiscQ.placeholder} maxLength={500} value={otherText} onChange={e => setOtherText(e.target.value)} rows={5} />
+                    <div className="oi-char-count">{otherText.length}/500</div>
+                  </div>
+                ) : currentDiscQ.key === 'tools' ? (<>
+                  <div className="oi-opt-grid oi-opt-grid-icons">
+                    {currentDiscQ.options.filter(o => o!==OTHER_OPTION && o!=="We don't use many tools yet").map(opt => {
+                      const on = discSel.includes(opt); const color = TOOL_COLORS[opt];
+                      return (
+                        <button key={opt} type="button" className={'oi-opt oi-opt-icon-btn'+(on?' selected':'')} aria-pressed={on} onClick={() => toggleDisc(opt)}>
+                          {on ? <span className="oi-opt-check"><Ico d={ICONS.check} size={13} sw={3} /></span>
+                            : opt==='Microsoft 365' ? <span className="oi-opt-logo"><MultiLogo name="ms365" /></span>
+                            : opt==='Google Workspace' ? <span className="oi-opt-logo"><MultiLogo name="google" /></span>
+                            : <span className="oi-opt-logo" style={{ color }}><Ico d={TOOL_ICONS[opt]} size={20} sw={1.8} /></span>}
+                          <span>{opt}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <div className="oi-opt-grid">
+                    {[OTHER_OPTION, "We don't use many tools yet"].map(opt => {
+                      const on = discSel.includes(opt);
+                      return (
+                        <button key={opt} type="button" className={'oi-opt wide'+(on?' selected':'')} aria-pressed={on} onClick={() => toggleDisc(opt)}>
+                          {on ? <span className="oi-opt-check"><Ico d={ICONS.check} size={13} sw={3} /></span> : <span className="oi-opt-icon"><Ico d={TOOL_ICONS[opt]} size={20} /></span>}
+                          <span>{opt}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                  {discSel.includes(OTHER_OPTION) && <input className="oi-other-input" type="text" placeholder="Tell me more…" value={otherText} onChange={e => setOtherText(e.target.value)} autoFocus />}
+                </>) : (<>
+                  <div className={'oi-opt-grid'+(currentDiscQ.key==='whoUses'?' oi-opt-grid-photo':'')}>
+                    {currentDiscQ.options.map(opt => {
+                      const on = discSel.includes(opt);
+                      const photo = currentDiscQ.key === 'whoUses' ? WHOUSES_PHOTOS[opt] : undefined;
+                      const icon = currentDiscQ.key === 'goals' ? GOALS_ICONS[opt] : QUESTION_ICONS[opt] || '';
+                      return (
+                        <button key={opt} type="button" className={'oi-opt'+(on?' selected':'')+(opt===OTHER_OPTION?' wide':'')+(photo?' oi-opt-photo-btn':'')} aria-pressed={on} onClick={() => toggleDisc(opt)}>
+                          {on ? <span className="oi-opt-check"><Ico d={ICONS.check} size={13} sw={3} /></span>
+                            : photo ? <span className="oi-opt-photo" style={{ backgroundImage:'url('+photo+')' }}></span>
+                            : photo === undefined && currentDiscQ.key === 'whoUses' ? <span className="oi-opt-icon"><Ico d={ICONS.people} size={20} /></span>
+                            : icon ? <span className="oi-opt-icon"><Ico d={icon} size={20} /></span> : <span className="oi-opt-dot"></span>}
+                          <span>{opt}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                  {discSel.includes(OTHER_OPTION) && <input className="oi-other-input" type="text" placeholder="Tell me more…" value={otherText} onChange={e => setOtherText(e.target.value)} autoFocus />}
+                </>)}
+                <div style={{ display:'flex', gap:10, marginTop:14 }}>
+                  <button type="button" className="oi-btn oi-btn-outline" onClick={discBack}><Ico d={ICONS.back} size={16} sw={2} /> Back</button>
+                  <button type="button" className="oi-btn oi-btn-blue" style={{ flex:1 }} disabled={!currentDiscQ.freeText && (discSel.length===0 || discNeedsOther)} onClick={confirmDisc}>{discIdx === sr.current.activeQuestions.length-1 ? 'Continue' : 'Next'} <Ico d={ICONS.arrow} size={16} sw={2} /></button>
+                </div>
               </div>
             )}
           </div>
@@ -838,7 +1061,7 @@ export default function DavidModal({ isOpen, onClose }: { isOpen: boolean; onClo
                   <button type="button" className="oi-btn oi-btn-blue" onClick={() => setScreen('capacity-report')}>View Report Online <Ico d={ICONS.arrow} size={16} sw={2} /></button>
                   <button type="button" className="oi-btn oi-btn-outline" onClick={() => window.print()}><Ico d={ICONS.download} size={17} sw={2} /> Download PDF</button>
                 </div>
-                <button type="button" className="oi-link-btn" onClick={startBuildWorkforce}>Continue to next steps &rarr;</button>
+                <button type="button" className="oi-link-btn" onClick={startSevenDay}>Let&rsquo;s explore a 7-Day OI Experience &rarr;</button>
               </div>
             )}
           </div>
@@ -862,15 +1085,100 @@ export default function DavidModal({ isOpen, onClose }: { isOpen: boolean; onClo
             <div className="cr-paper-actions">
               <button type="button" className="oi-btn oi-btn-outline" onClick={() => setScreen('report')}><Ico d={ICONS.back} size={16} sw={2} /> Back</button>
               <button type="button" className="oi-btn oi-btn-outline" onClick={() => window.print()}><Ico d={ICONS.download} size={17} sw={2} /> Download PDF</button>
-              <button type="button" className="oi-btn oi-btn-blue" onClick={startBuildWorkforce}>Continue <Ico d={ICONS.arrow} size={16} sw={2} /></button>
+              <button type="button" className="oi-btn oi-btn-blue" onClick={startSevenDay}>Continue <Ico d={ICONS.arrow} size={16} sw={2} /></button>
             </div>
           </div>
 
-          {/* Next steps · recommended workforce */}
+          {/* 11 · Your 7-day OI Experience Starts Now */}
+          <div className={'david-screen oi-screen'+(sc('7day-start')?' active':'')} data-screen="7day-start">
+            <div className="oi-card oi-narrow">
+              <ConsultantHead />
+              <h3 className="oi-card-title">Your 7-Day OI Experience Starts Now</h3>
+              <p style={{ fontSize:14, color:'#31394A', lineHeight:1.6, marginBottom:14 }}>Great! I now understand your organisation, and I&rsquo;m ready to start working with you.</p>
+              <div className="oi-day-badge"><strong>Day 1 of 7 &middot; 7-Day OI Experience</strong><span>{sevenDayRange()}</span></div>
+              <p style={{ fontSize:13.5, color:'var(--grey)', margin:'12px 0 18px' }}>We&rsquo;re just getting started. I&rsquo;ll keep you updated as we go.</p>
+              <div className="oi-howitworks">
+                <div className="oi-howitworks-title">What I&rsquo;ll be doing over the next 7 days</div>
+                <div className="oi-sevenday-grid">
+                  {SEVEN_DAY_ITEMS.map(it => (
+                    <div key={it.title} className="oi-sevenday-item"><span className="oi-feature-icon"><Ico d={ICONS[it.icon as keyof typeof ICONS]} size={18} /></span><strong>{it.title}</strong><span>{it.text}</span></div>
+                  ))}
+                </div>
+              </div>
+              <div className="oi-howitworks">
+                <div className="oi-howitworks-title">What you need to do</div>
+                <ul className="oi-check-list">
+                  {SEVEN_DAY_TODO.map(t => <li key={t}><Ico d={ICONS.check} size={14} sw={2.5} />{t}</li>)}
+                </ul>
+              </div>
+              <div style={{ display:'flex', gap:10 }}>
+                <button type="button" className="oi-btn oi-btn-outline" onClick={() => setScreen('capacity-report')}><Ico d={ICONS.back} size={16} sw={2} /> Back</button>
+                <button type="button" className="oi-btn oi-btn-blue" style={{ flex:1 }} onClick={startWhatHappened}>Start my 7-Day Experience <Ico d={ICONS.arrow} size={16} sw={2} /></button>
+              </div>
+            </div>
+          </div>
+
+          {/* 12 · What happened during your 7-day Experience */}
+          <div className={'david-screen oi-screen'+(sc('what-happened')?' active':'')} data-screen="what-happened">
+            <div className="oi-card oi-narrow">
+              <ConsultantHead />
+              <h3 className="oi-card-title">What happened during your 7-day Experience?</h3>
+              <p style={{ fontSize:14, color:'#31394A', lineHeight:1.6 }}>Over the past 7 days, I&rsquo;ve been learning from your organisation, completing real work and connecting your information.</p>
+              <p style={{ fontSize:14, fontWeight:600, color:'var(--navy)', marginBottom:10 }}>Here&rsquo;s what I&rsquo;ve done so far.</p>
+              <div className="oi-stat-toolbar"><span>Show: Last 7 days &#9662;</span><span>{sevenDayRange()}</span></div>
+              <div className="oi-stat-grid">
+                {EXPERIENCE_STATS.map(s => (
+                  <div key={s.label} className="oi-stat-tile"><span className="oi-feature-icon"><Ico d={ICONS[s.icon as keyof typeof ICONS]} size={18} /></span><strong>{s.value}</strong><span className="oi-stat-label">{s.label}</span><span className="oi-stat-text">{s.text}</span></div>
+                ))}
+              </div>
+              <div style={{ display:'flex', gap:10, flexWrap:'wrap', marginTop:16 }}>
+                <button type="button" className="oi-btn oi-btn-outline" onClick={() => setScreen('7day-start')}><Ico d={ICONS.back} size={16} sw={2} /> Back</button>
+                <button type="button" className="oi-btn oi-btn-outline" onClick={() => window.print()}><Ico d={ICONS.download} size={17} sw={2} /> Download full report</button>
+                <button type="button" className="oi-btn oi-btn-outline" onClick={() => { window.location.href = 'mailto:?subject=My OI Workforce — 7-Day Experience&body=Here is what my Personal OI has done this week.'; }}><Ico d={ICONS.mail} size={17} sw={2} /> Share internally</button>
+                <button type="button" className="oi-btn oi-btn-blue" style={{ flex:1 }} onClick={startValueReport}>See my OI Value Report <Ico d={ICONS.arrow} size={16} sw={2} /></button>
+              </div>
+            </div>
+          </div>
+
+          {/* 13 · Your OI Value Report */}
+          <div className={'david-screen oi-screen'+(sc('value-report')?' active':'')} data-screen="value-report">
+            <div className="oi-card oi-narrow">
+              <ConsultantHead />
+              <h3 className="oi-card-title">Your OI Value Report</h3>
+              <p style={{ fontSize:14, color:'#31394A', lineHeight:1.6, marginBottom:14 }}>Here&rsquo;s what I&rsquo;ve learned, what I&rsquo;ve done and the value I can bring.</p>
+              <div className="oi-badge-row">
+                <span className="oi-badge pink"><Ico d={ICONS.store} size={14} /> Spend less</span>
+                <span className="oi-badge blue"><Ico d={ICONS.bolt} size={14} /> Do more</span>
+                <span className="oi-badge green"><Ico d={ICONS.check} size={14} /> Work better</span>
+              </div>
+              <div className="oi-howitworks">
+                <div className="oi-howitworks-title">Potential and demonstrated value</div>
+                <div className="oi-value-grid">
+                  <div className="oi-value-card"><strong>{fmtMoney(replacementValue, currency)}</strong><span>Replacement Value</span><em>Estimated annual value</em></div>
+                  <div className="oi-value-card"><strong>{fmtMoney(capabilityValue, currency)}</strong><span>Capability Value</span><em>Estimated annual value</em></div>
+                  <div className="oi-value-card"><strong>{fmtMoney(productiveValue, currency)}</strong><span>Productive Value</span><em>Estimated annual value</em></div>
+                </div>
+              </div>
+              <div className="oi-howitworks">
+                <div className="oi-howitworks-title">Other key outcomes</div>
+                <div className="oi-outcome-grid">
+                  {OTHER_OUTCOMES.map(o => <div key={o.title} className="oi-outcome-item"><Ico d={ICONS.check} size={14} sw={2.5} /><div><strong>{o.title}</strong><span>{o.text}</span></div></div>)}
+                </div>
+              </div>
+              <div style={{ display:'flex', gap:10, flexWrap:'wrap' }}>
+                <button type="button" className="oi-btn oi-btn-outline" onClick={() => setScreen('what-happened')}><Ico d={ICONS.back} size={16} sw={2} /> Back</button>
+                <button type="button" className="oi-btn oi-btn-outline" onClick={() => window.print()}><Ico d={ICONS.download} size={17} sw={2} /> Download full report</button>
+                <button type="button" className="oi-btn oi-btn-outline" onClick={() => { window.location.href = 'mailto:?subject=Our OI Value Report'; }}><Ico d={ICONS.people} size={17} sw={2} /> Share with your team</button>
+                <button type="button" className="oi-btn oi-btn-blue" style={{ flex:1 }} onClick={startBuildWorkforce}>See my recommended Workforce <Ico d={ICONS.arrow} size={16} sw={2} /></button>
+              </div>
+            </div>
+          </div>
+
+          {/* 14 · recommended workforce */}
           <div className={'david-screen oi-screen'+(sc('build-workforce')?' active':'')} data-screen="build-workforce">
             <div className="david-wizard" style={{ maxWidth:560 }}>
-              <div className="david-eyebrow">Recommended Workforce&trade;</div>
-              <div className="david-wizard-q">Our recommendations are built around what you told me matters: {answerText(sr.current.orgAnswers,'objective','your top priorities')}.</div>
+              <div className="david-eyebrow">Your Recommended Workforce&trade;</div>
+              <div className="david-wizard-q">Based on our chat, here&rsquo;s the OI Workforce I&rsquo;d recommend — built around what you told me matters: {answerText(sr.current.orgAnswers,'goals','your top priorities')}.</div>
               <div style={{ display:'flex', flexDirection:'column', gap:10, marginBottom:16 }}>
                 {workforceSelection.map(name => {
                   const p = WORKFORCE_LIBRARY[name]; if (!p) return null;
@@ -883,15 +1191,15 @@ export default function DavidModal({ isOpen, onClose }: { isOpen: boolean; onClo
                   );
                 })}
               </div>
-              <button className="oi-btn oi-btn-blue oi-btn-block" type="button" onClick={() => setScreen('pricing')}>Continue <Ico d={ICONS.arrow} size={16} sw={2} /></button>
+              <button className="oi-btn oi-btn-blue oi-btn-block" type="button" onClick={() => setScreen('pricing')}>See your investment <Ico d={ICONS.arrow} size={16} sw={2} /></button>
             </div>
           </div>
 
-          {/* Next steps · pricing */}
+          {/* 15 · investment */}
           <div className={'david-screen oi-screen'+(sc('pricing')?' active':'')} data-screen="pricing">
             <div className="david-wizard" style={{ maxWidth:580 }}>
-              <div className="david-eyebrow">Pricing</div>
-              <div className="david-wizard-q">Your Recommended Workforce Price&trade;</div>
+              <div className="david-eyebrow">Your Investment</div>
+              <div className="david-wizard-q">Estimated annual value {fmtMoney(capabilityValue, currency)}</div>
               <p style={{ fontSize:13, color:'var(--grey)', margin:'-8px 0 14px', textAlign:'center' }}>Adjust this to fit your budget &mdash; remove a role, or swap it for a different one.</p>
               <div style={{ display:'flex', justifyContent:'center', alignItems:'center', gap:8, marginBottom:16 }}>
                 <label style={{ fontSize:12, color:'var(--grey)', fontWeight:600, textTransform:'uppercase', letterSpacing:'.03em' }}>Currency</label>
@@ -925,10 +1233,13 @@ export default function DavidModal({ isOpen, onClose }: { isOpen: boolean; onClo
                 })}
               </div>
               <button type="button" className="oi-btn oi-btn-outline oi-btn-block" style={{ marginBottom:16 }} onClick={() => { const u=Object.keys(WORKFORCE_LIBRARY).find(n=>!workforceSelection.includes(n)); if(u) setWorkforceSelection(prev=>[...prev,u]); }}>+ Add another OI Consultant</button>
-              <div className="cr-summary-box" style={{ fontWeight:600 }}>{workforceSelection.length===0?'No OI Consultants selected yet — add one above.':'Total: '+fmtMoney(totalOI,currency)+' / month. That\'s '+fmtMoney(totalHuman-totalOI,currency)+' / month less than hiring the human equivalent.'}</div>
-              <div className="david-trial-banner"><span>Don&rsquo;t worry about any of this yet</span>Try your full workforce free for 14 days &mdash; nothing to pay, no card, no obligation.</div>
-              <button className="oi-btn oi-btn-blue oi-btn-block" type="button" style={{ fontSize:16, padding:'16px 24px' }} onClick={startLoading}>Start free for 14 days &rarr;</button>
-              <p style={{ fontSize:12, color:'var(--grey)', textAlign:'center', marginTop:14, lineHeight:1.7 }}>No credit card needed for your trial.<br />This pricing is fully editable after your trial &mdash; no obligation to continue.</p>
+              <div className="oi-invest-summary">
+                <div className="oi-invest-row oi-invest-head"><span>Total investment</span><span>Monthly</span><span>Annual (-10%)</span></div>
+                <div className="oi-invest-row oi-invest-total"><span>Total monthly investment</span><strong>{fmtMoney(totalOI,currency)}</strong><strong>{fmtMoney(annualOIWithDiscount,currency)}</strong></div>
+              </div>
+              <div className="cr-summary-box" style={{ fontWeight:600 }}>{workforceSelection.length===0?'No OI Consultants selected yet — add one above.':'That\'s '+fmtMoney(totalHuman-totalOI,currency)+' / month less than hiring the human equivalent.'}</div>
+              <button className="oi-btn oi-btn-blue oi-btn-block" type="button" style={{ fontSize:16, padding:'16px 24px' }} onClick={startLoading}>Employ my OI Workforce &rarr;</button>
+              <p style={{ fontSize:12, color:'var(--grey)', textAlign:'center', marginTop:14, lineHeight:1.7 }}>No long-term contract. This pricing is fully editable at any time &mdash; swap, add or remove a role whenever you need to.</p>
             </div>
           </div>
 
@@ -941,15 +1252,25 @@ export default function DavidModal({ isOpen, onClose }: { isOpen: boolean; onClo
             </div>
           </div>
 
-          {/* Next steps · welcome */}
-          <div className={'david-screen oi-screen oi-center'+(sc('welcome')?' active':'')} data-screen="welcome">
-            <div className="oi-meet-card">
-              <div className="oi-meet-glow"></div>
-              <img className="oi-meet-photo" src={PERSONAL_OI_PHOTO} alt="" />
-              <h3>Welcome, {sr.current.name}.</h3>
-              <p>Everything&rsquo;s ready. I&rsquo;m looking forward to working with you.</p>
-              <p className="oi-meet-small">You&rsquo;re on secure cloud to start &mdash; the fastest way in. Need fully offline or on-premise later? Same platform, switch anytime.</p>
-              <button type="button" className="oi-btn oi-btn-white" onClick={startPersonalise}>Personalise my Personal OI</button>
+          {/* 16 · Let's start working together */}
+          <div className={'david-screen oi-screen'+(sc('welcome')?' active':'')} data-screen="welcome">
+            <div className="oi-card oi-narrow">
+              <ConsultantHead />
+              <h3 className="oi-card-title">Let&rsquo;s start working together</h3>
+              <p className="oi-card-sub">Great! Your OI Workforce is ready to go.</p>
+              <ul className="oi-check-list">
+                {WELCOME_CHECKLIST.map(t => <li key={t}><Ico d={ICONS.check} size={14} sw={2.5} />{t}</li>)}
+              </ul>
+              <div className="oi-howitworks">
+                <div className="oi-howitworks-title">What happens next?</div>
+                <div className="oi-timeline">
+                  {WELCOME_TIMELINE.map(row => (
+                    <div key={row.when} className="oi-timeline-row"><span className="oi-timeline-when">{row.when}</span><span className="oi-timeline-text">{row.text}</span></div>
+                  ))}
+                </div>
+              </div>
+              <button type="button" className="oi-btn oi-btn-blue oi-btn-block" onClick={onClose}>Complete and start <Ico d={ICONS.arrow} size={16} sw={2} /></button>
+              <button type="button" className="oi-link-btn" onClick={startPersonalise}>Personalise my Personal OI</button>
             </div>
           </div>
 
