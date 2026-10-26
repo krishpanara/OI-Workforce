@@ -1,6 +1,7 @@
 'use client';
 import { useEffect } from 'react';
 import Image from 'next/image';
+import { useBodyScrollLock } from '@/hooks/useBodyScrollLock';
 
 interface LightboxProps {
   src: string;
@@ -9,6 +10,8 @@ interface LightboxProps {
 }
 
 export default function Lightbox({ src, onClose, open }: LightboxProps) {
+  useBodyScrollLock(open);
+
   useEffect(() => {
     if (!open) return;
     const handler = (e: KeyboardEvent) => {

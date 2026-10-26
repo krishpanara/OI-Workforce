@@ -1,6 +1,7 @@
 'use client';
 import { useState, useRef, useEffect } from 'react';
 import { IMAGES } from '@/lib/images';
+import { useBodyScrollLock } from '@/hooks/useBodyScrollLock';
 
 type Currency = 'USD' | 'GBP' | 'EUR' | 'GHS';
 type ChatMsg = { id: number; from: 'david' | 'user'; text: string } | { id: number; from: 'thinking' };
@@ -140,6 +141,17 @@ const HOW_IT_WORKS: { icon: string; title: string; text: string }[] = [
   { icon: 'calendar', title: 'You decide whether we work together', text: 'If you like what you see, you can invite me to work with you for the next 7 days — FREE.' },
   { icon: 'shield', title: 'No obligation', text: 'You’re in control. You can stop at any time.' },
 ];
+const BRIEF_CARDS: { icon: string; title: string; text: string }[] = [
+  { icon: 'store', title: 'Your Organisation', text: 'What you do, your market, and recent developments.' },
+  { icon: 'mic', title: 'What You Told Me', text: 'Your priorities, challenges and goals.' },
+  { icon: 'search', title: 'What I Found', text: 'Public information from your website, news and online sources.' },
+  { icon: 'people', title: 'How You Appear to Work', text: 'Team structure, systems and ways of working.' },
+  { icon: 'lightbulb', title: 'What I Notice', text: 'Key observations and opportunities.' },
+  { icon: 'pin', title: 'Potential Opportunities', text: 'Areas where OI could help.' },
+  { icon: 'gear', title: 'Your Current Technology', text: 'Systems and tools identified.' },
+  { icon: 'bolt', title: 'Where OI Could Work With You', text: 'Initial use cases and ideas.' },
+];
+const BRIEF_COLORS = ['#1D5FD4', '#D6558C', '#7C5CFC', '#2C8C8A', '#7C5CFC', '#27AE60', '#F2994A', '#1D5FD4'];
 const SEVEN_DAY_ITEMS: { icon: string; title: string; text: string }[] = [
   { icon: 'book', title: 'Learn', text: 'Understand your organisation and help you achieve real results.' },
   { icon: 'link', title: 'Connect', text: 'Bring together your people, your information and your tools' },
@@ -226,6 +238,10 @@ const SMALL_SIZES = ['1–10','11–50'];
 const LARGE_SIZES = ['251–1,000','1,000+'];
 const SIZE_OPTIONS = ['1–10','11–50','51–250','251–1,000','1,000+'];
 const COUNTRY_OPTIONS = ['Ghana','Nigeria','Kenya','South Africa','United Kingdom','Ireland','United States','Canada','India','United Arab Emirates','Other'];
+const CITY_BY_COUNTRY: Record<string, string> = {
+  Ghana: 'Accra', Nigeria: 'Lagos', Kenya: 'Nairobi', 'South Africa': 'Johannesburg', 'United Kingdom': 'London',
+  Ireland: 'Dublin', 'United States': 'New York', Canada: 'Toronto', India: 'Mumbai', 'United Arab Emirates': 'Dubai',
+};
 const ROLE_OPTIONS = ['Managing Director','CEO / Founder','Director','Finance','Operations','HR / People','Sales & Marketing','Other'];
 
 const INDUSTRY_ICONS: Record<string, string> = {
@@ -293,9 +309,25 @@ const GOALS_ICONS: Record<string, string> = {
   'Improve compliance and risk management': ICONS.shield,
   [OTHER_OPTION]: '<path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/>',
 };
+const ICON_LIST = '<path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/>';
+const ICON_CHAT = '<path d="M8 10h8M8 14h5"/><path d="M21 12c0 4.4-4 8-9 8-1.1 0-2.2-.2-3.2-.5L3 21l1.5-4.3C3.6 15.4 3 13.8 3 12c0-4.4 4-8 9-8s9 3.6 9 8z"/>';
+const ICON_HEART_PEOPLE = '<circle cx="9" cy="7" r="3.5"/><path d="M2 21a7 7 0 0114 0M16 11l2 2 4-4"/>';
+const ICON_COINS = '<ellipse cx="12" cy="6" rx="7" ry="3"/><path d="M5 6v6c0 1.7 3.1 3 7 3s7-1.3 7-3V6M5 12v6c0 1.7 3.1 3 7 3s7-1.3 7-3v-6"/>';
+const ICON_OTHER = '<path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/>';
 const QUESTION_ICONS: Record<string, string> = {
   'Finding information': ICONS.search, 'Too many tools and systems': ICONS.grid, 'Manual and repetitive work': ICONS.gear,
   'Slow decision-making': ICONS.target, 'Team capacity and workload': ICONS.people, 'Keeping knowledge when people leave': ICONS.book,
+  Emails: ICONS.mail, 'Shared drives (e.g. OneDrive, Google Drive)': ICONS.folder, 'Documents and folders': ICONS.file,
+  'CRM or business systems': ICONS.briefcase, 'Team chat (e.g. Teams, Slack, WhatsApp)': ICON_CHAT, 'Individual files and spreadsheets': ICONS.grid,
+  "Not sure / it's spread across multiple places": ICONS.question,
+  'Research and analysis': ICONS.search, 'Meetings and follow-up': ICONS.calendar, 'Document creation and management': ICONS.file,
+  'Project and task management': ICON_LIST, 'Customer and stakeholder support': ICONS.people, 'Data and reporting': ICONS.chart,
+  'Process improvement and automation': ICONS.gear, 'Compliance and risk': ICONS.shield,
+  'Save time and reduce manual work': ICONS.bolt, 'Improve decision-making': ICONS.lightbulb, 'Increase productivity and capacity': ICONS.chart,
+  'Better customer experience': ICON_HEART_PEOPLE, 'Reduce costs': ICON_COINS, 'Stronger compliance and governance': ICONS.shield,
+  'As soon as possible': ICONS.bolt, 'Within the next 1–3 months': ICONS.calendar, 'Within 3–6 months': ICONS.calendar,
+  'Later this year': ICONS.calendar, 'Just exploring for now': ICONS.search,
+  [OTHER_OPTION]: ICON_OTHER,
 };
 const WHOUSES_PHOTOS: Record<string, string> = {
   'Just me': IMAGES.avatarConsult2,
@@ -336,6 +368,7 @@ function MultiLogo({ name }: { name: 'ms365' | 'google' }) {
 const SHELL_NAV: [string, string][] = [['My OI', ICONS.myoi],['Command Centre', ICONS.grid],['Projects', ICONS.folder],['Work', ICONS.briefcase],['Documents', ICONS.file],['People', ICONS.people],['Meetings', ICONS.calendar],['Knowledge Bank', ICONS.book],['More', ICONS.more]];
 
 const STEP_LABELS = ['Meet','Play with','We create','Choose role','My OI (Demo)','Imagine if','Work together','Tell us','Quick questions','Your report','7-Day Experience','What happened','Value report','Workforce','Investment','Welcome'];
+const TRANSIENT_SCREENS = new Set(['connecting', 'loading']);
 const SCREEN_STEP: Record<string, number> = {
   intro: 1, industry: 2, 'business-intro': 3, role: 4, connecting: 5, chat: 5, moment: 6, offer: 7, arrange: 7,
   company: 8, discovery: 9, report: 10, 'capacity-report': 10,
@@ -368,19 +401,23 @@ function ConsultantHead() {
     </div>
   );
 }
+function CheckDot({ i }: { i: number }) {
+  return <span className="oi-check-dot" style={{ background:BRIEF_COLORS[i % BRIEF_COLORS.length] }}><Ico d={ICONS.check} size={10} sw={3} /></span>;
+}
 
-type SpeechRecognitionLike = { lang: string; interimResults: boolean; start: () => void; stop: () => void; onresult: ((e: { results: { [i: number]: { [j: number]: { transcript: string } } } }) => void) | null; onend: (() => void) | null; onerror: (() => void) | null };
+type SpeechRecognitionLike = { lang: string; interimResults: boolean; start: () => void; stop: () => void; onresult: ((e: { results: { [i: number]: { [j: number]: { transcript: string } } } }) => void) | null; onend: (() => void) | null; onerror: ((e: { error?: string }) => void) | null };
 
 // ── Component ──────────────────────────────────────────────────────────────
 export default function DavidModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
   const [screen, setScreen] = useState('intro');
-  const [nameVal, setNameVal] = useState('');
+  const [signup, setSignup] = useState({ firstName: '', lastName: '', email: '', phone: '' });
   const [selIndustry, setSelIndustry] = useState('');
   const [showAllIndustries, setShowAllIndustries] = useState(false);
   const [selRole, setSelRole] = useState('');
   const [chatMsgs, setChatMsgs] = useState<ChatMsg[]>([]);
   const [continueVisible, setContinueVisible] = useState(false);
   const [listening, setListening] = useState(false);
+  const [micMessage, setMicMessage] = useState('');
   const [connectingText, setConnectingText] = useState('Connecting you to a demonstration organisation…');
   const [momentCount, setMomentCount] = useState(0);
   const [invite, setInvite] = useState({ name: '', email: '', sent: false });
@@ -398,19 +435,26 @@ export default function DavidModal({ isOpen, onClose }: { isOpen: boolean; onClo
   const [avatarPhotoSel, setAvatarPhotoSel] = useState<string | null>(null);
   const [personalName, setPersonalName] = useState('');
   const [personalStyle, setPersonalStyle] = useState('');
-  const [voiceOn, setVoiceOn] = useState(true);
+  const [voiceOn, setVoiceOn] = useState(false);
+  const voiceOnRef = useRef(false);
+  useEffect(() => { voiceOnRef.current = voiceOn; }, [voiceOn]);
   const [showAvatarSection, setShowAvatarSection] = useState(false);
   const [crData, setCrData] = useState<{ company: string; country: string; industry: string; date: string; summary: string; driversHTML: string; findingsHTML: string } | null>(null);
 
-  const sr = useRef({ name: '', industry: '', position: '', orgAnswers: {} as Record<string,string|string[]>, chatCount: 0, mockBusiness: null as (typeof MOCK_BUSINESSES)[string] | null, momentStarted: false, activeQuestions: [] as typeof DISCOVERY_QUESTIONS, usedResponses: new Set<string>() });
+  const sr = useRef({ name: '', lastName: '', email: '', phone: '', password: '', industry: '', position: '', orgAnswers: {} as Record<string,string|string[]>, chatCount: 0, mockBusiness: null as (typeof MOCK_BUSINESSES)[string] | null, momentStarted: false, activeQuestions: [] as typeof DISCOVERY_QUESTIONS, usedResponses: new Set<string>() });
   const chatLogRef = useRef<HTMLDivElement>(null);
   const chatInputRef = useRef<HTMLInputElement>(null);
   const bodyRef = useRef<HTMLDivElement>(null);
   const recogRef = useRef<SpeechRecognitionLike | null>(null);
   const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
   const msgId = useRef(0);
+  const historyRef = useRef<string[]>([]);
 
   function later(fn: () => void, ms: number) { timers.current.push(setTimeout(fn, ms)); }
+  function nav(s: string) { setScreen(prev => { if (!TRANSIENT_SCREENS.has(prev)) historyRef.current.push(prev); return s; }); }
+  function goBack() { const prev = historyRef.current.pop(); if (prev) setScreen(prev); }
+
+  useBodyScrollLock(isOpen);
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) { if (e.key === 'Escape' && isOpen) onClose(); }
@@ -420,13 +464,14 @@ export default function DavidModal({ isOpen, onClose }: { isOpen: boolean; onClo
 
   useEffect(() => {
     if (isOpen) {
-      setScreen('intro'); setNameVal(''); setSelIndustry(''); setShowAllIndustries(false); setSelRole('');
-      setChatMsgs([]); setContinueVisible(false); setListening(false); setMomentCount(0);
+      setScreen('intro'); historyRef.current = []; setSignup({ firstName: '', lastName: '', email: '', phone: '' }); setSelIndustry(''); setShowAllIndustries(false); setSelRole('');
+      setChatMsgs([]); setContinueVisible(false); setListening(false); setMicMessage(''); setMomentCount(0);
       setInvite({ name: '', email: '', sent: false }); setCompany({ company: '', website: '', email: '', industry: '', country: '', size: '', role: '', none: false });
       setOrgStage('form'); setOrgPct(0);
       setDiscIdx(0); setDiscSel([]); setOtherText(''); setLoadingLine(''); setLoadingPct(0); setWorkforceSelection([]);
       setVoiceGender(''); setAvatarPhotoSel(null); setPersonalName(''); setPersonalStyle(''); setShowAvatarSection(false); setCrData(null);
-      sr.current = { name: '', industry: '', position: '', orgAnswers: {}, chatCount: 0, mockBusiness: null, momentStarted: false, activeQuestions: [], usedResponses: new Set() };
+      setVoiceOn(false); voiceOnRef.current = false; try { if (hasSpeech) speechSynthesis.cancel(); } catch {}
+      sr.current = { name: '', lastName: '', email: '', phone: '', password: '', industry: '', position: '', orgAnswers: {}, chatCount: 0, mockBusiness: null, momentStarted: false, activeQuestions: [], usedResponses: new Set() };
     }
     return () => {
       timers.current.forEach(clearTimeout); timers.current = [];
@@ -439,24 +484,51 @@ export default function DavidModal({ isOpen, onClose }: { isOpen: boolean; onClo
   useEffect(() => { if (bodyRef.current) bodyRef.current.scrollTop = 0; }, [screen, discIdx]);
 
   const hasSpeech = typeof window !== 'undefined' && 'speechSynthesis' in window;
+  const hasRecognition = typeof window !== 'undefined' && !!((window as unknown as { SpeechRecognition?: unknown; webkitSpeechRecognition?: unknown }).SpeechRecognition || (window as unknown as { SpeechRecognition?: unknown; webkitSpeechRecognition?: unknown }).webkitSpeechRecognition);
+
+  useEffect(() => {
+    if (!isOpen || !hasSpeech) return;
+    speechSynthesis.getVoices();
+  }, [isOpen, hasSpeech]);
+
   function speak(text: string) {
-    if (!voiceOn || !hasSpeech) return;
-    try { speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(text); u.rate = 1.02; speechSynthesis.speak(u); } catch {}
+    if (!voiceOnRef.current || !hasSpeech) return;
+    try {
+      speechSynthesis.cancel();
+      later(() => {
+        if (!voiceOnRef.current) return;
+        const u = new SpeechSynthesisUtterance(text);
+        u.rate = 1.02; u.lang = 'en-GB';
+        try { speechSynthesis.speak(u); } catch {}
+      }, 60);
+    } catch {}
   }
 
   // ── Steps 1–4: meet, industry, demo company, role ──
-  function submitName() { sr.current.name = nameVal.trim() || 'there'; setScreen('industry'); }
+  function genPassword(): string {
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789';
+    let s = ''; for (let i = 0; i < 10; i++) s += chars[Math.floor(Math.random() * chars.length)];
+    return s;
+  }
+  function submitSignup() {
+    sr.current.name = signup.firstName.trim() || 'there';
+    sr.current.lastName = signup.lastName.trim();
+    sr.current.email = signup.email.trim();
+    sr.current.phone = signup.phone.trim();
+    sr.current.password = genPassword();
+    nav('industry');
+  }
   function pickIndustry(ind: string) {
     setSelIndustry(ind);
     sr.current.industry = ind; sr.current.mockBusiness = MOCK_BUSINESSES[ind] || MOCK_BUSINESSES['Professional Services'];
-    later(() => setScreen('business-intro'), 320);
+    later(() => nav('business-intro'), 320);
   }
   function pickPosition(pos: string) {
     setSelRole(pos);
     const biz = sr.current.mockBusiness!; sr.current.position = pos;
     setConnectingText('Connecting you to ' + biz.name + ' as ' + posLabel(sr.current.industry, pos) + '…');
-    later(() => setScreen('connecting'), 280);
-    later(() => { setScreen('chat'); startChat(); }, 1900);
+    later(() => nav('connecting'), 280);
+    later(() => { nav('chat'); startChat(); }, 1900);
   }
 
   // ── Step 5: My OI demo ──
@@ -493,20 +565,29 @@ export default function DavidModal({ isOpen, onClose }: { isOpen: boolean; onClo
   function toggleMic() {
     const w = window as unknown as { SpeechRecognition?: new () => SpeechRecognitionLike; webkitSpeechRecognition?: new () => SpeechRecognitionLike };
     const Recog = w.SpeechRecognition || w.webkitSpeechRecognition;
-    if (!Recog) { chatInputRef.current?.focus(); return; }
+    if (!Recog) { setMicMessage("Voice input isn't supported in this browser — try Chrome or Edge, or just type below."); chatInputRef.current?.focus(); return; }
     if (listening) { try { recogRef.current?.stop(); } catch {} return; }
+    setMicMessage('');
     const r = new Recog(); r.lang = 'en-GB'; r.interimResults = false;
     r.onresult = e => { const t = e.results[0]?.[0]?.transcript; if (t) sendChat(t); };
-    r.onend = () => setListening(false); r.onerror = () => setListening(false);
+    r.onend = () => setListening(false);
+    r.onerror = e => {
+      setListening(false);
+      const reason = e?.error === 'not-allowed' || e?.error === 'service-not-allowed'
+        ? 'Microphone access was blocked — allow it in your browser settings and try again.'
+        : e?.error === 'no-speech' ? "Didn't catch that — tap the mic and try again."
+        : "Voice input isn't available right now — try typing instead.";
+      setMicMessage(reason);
+    };
     recogRef.current = r; setListening(true);
-    try { r.start(); } catch { setListening(false); }
+    try { r.start(); } catch { setListening(false); setMicMessage("Couldn't start the microphone — try typing instead."); }
   }
 
   // ── Step 6: Imagine if ──
   function startMoment() {
     if (sr.current.momentStarted) return; sr.current.momentStarted = true;
     try { recogRef.current?.stop(); } catch {}
-    setScreen('moment'); setMomentCount(0);
+    nav('moment'); setMomentCount(0);
     let idx = 0;
     function next() {
       if (idx >= MOMENT_LINES.length) return;
@@ -537,7 +618,7 @@ export default function DavidModal({ isOpen, onClose }: { isOpen: boolean; onClo
   // ── Step 9: quick questions ──
   function startDiscovery() {
     sr.current.activeQuestions = DISCOVERY_QUESTIONS;
-    setDiscIdx(0); setDiscSel([]); setOtherText(''); setScreen('discovery'); speak(sr.current.activeQuestions[0].text);
+    setDiscIdx(0); setDiscSel([]); setOtherText(''); nav('discovery'); speak(sr.current.activeQuestions[0].text);
   }
   function toggleDisc(opt: string) {
     const q = sr.current.activeQuestions[discIdx]; if (q.freeText) return;
@@ -546,7 +627,7 @@ export default function DavidModal({ isOpen, onClose }: { isOpen: boolean; onClo
   }
   function discBack() {
     const prev = discIdx - 1;
-    if (prev < 0) { setOrgStage('found'); setScreen('company'); return; }
+    if (prev < 0) { setOrgStage('found'); goBack(); return; }
     const q = sr.current.activeQuestions[prev]; const existing = sr.current.orgAnswers[q.key];
     setDiscIdx(prev); setDiscSel(q.freeText ? [] : toArr(existing)); setOtherText(q.freeText ? String(existing || '') : '');
   }
@@ -607,7 +688,7 @@ export default function DavidModal({ isOpen, onClose }: { isOpen: boolean; onClo
     const summary = companyName+' is a '+(sizeKnown?size+'-employee ':'')+ind.toLowerCase()+' organisation based in '+country+'. The clearest priorities are '+objT+', and most work runs through '+st+' today. The team is '+staffingT+', and the bigger constraint on the customer side is '+growthT+'.';
     const date = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
     setCrData({ company: companyName, country, industry: ind, date, summary, driversHTML, findingsHTML });
-    setScreen('report');
+    nav('report');
     speak('Here is what I understand about '+companyName+'.');
   }
 
@@ -617,13 +698,13 @@ export default function DavidModal({ isOpen, onClose }: { isOpen: boolean; onClo
     setWorkforceSelection(prev => prev.length ? prev : [...names]);
   }
   function startSevenDay() {
-    populateWorkforce(); setScreen('7day-start');
+    populateWorkforce(); nav('7day-start');
     speak('Great! I now understand your organisation, and I\'m ready to start working with you.');
   }
-  function startWhatHappened() { setScreen('what-happened'); speak('Here\'s what I\'ve done so far.'); }
-  function startValueReport() { setScreen('value-report'); speak('Here\'s what I\'ve learned, what I\'ve done and the value I can bring.'); }
+  function startWhatHappened() { nav('what-happened'); speak('Here\'s what I\'ve done so far.'); }
+  function startValueReport() { nav('value-report'); speak('Here\'s what I\'ve learned, what I\'ve done and the value I can bring.'); }
   function startBuildWorkforce() {
-    populateWorkforce(); setScreen('build-workforce');
+    populateWorkforce(); nav('build-workforce');
     speak('For a '+sr.current.industry+' organisation, here is the OI Workforce I would recommend.');
   }
   function valueLineFor(name: string): string {
@@ -641,12 +722,12 @@ export default function DavidModal({ isOpen, onClose }: { isOpen: boolean; onClo
   function growingRevenue(a: Record<string,string|string[]>) { return hasAnswer(a,'goals','Grow revenue'); }
   function calcMonthly(name: string): number { const p = WORKFORCE_LIBRARY[name]; return p ? Math.round((p.benchmark/12)*OI_PRICING_PCT) : 0; }
   function startLoading() {
-    setScreen('loading'); let idx = 0;
+    nav('loading'); let idx = 0;
     function step() { if (idx>=LOADING_LINES.length) { later(startWelcome,500); return; } setLoadingLine(LOADING_LINES[idx]); setLoadingPct(Math.round(((idx+1)/LOADING_LINES.length)*100)); idx++; later(step,750); }
     step();
   }
-  function startWelcome() { setScreen('welcome'); speak('Welcome, '+sr.current.name+". Everything's ready. I'm looking forward to working with you."); }
-  function startPersonalise() { setVoiceGender(''); setAvatarPhotoSel(null); setPersonalName(''); setPersonalStyle(''); setShowAvatarSection(false); setScreen('personalise'); }
+  function startWelcome() { nav('welcome'); speak('Welcome, '+sr.current.name+". Everything's ready. I'm looking forward to working with you."); }
+  function startPersonalise() { setVoiceGender(''); setAvatarPhotoSel(null); setPersonalName(''); setPersonalStyle(''); setShowAvatarSection(false); nav('personalise'); }
 
   const totalOI = workforceSelection.reduce((s,n) => s+calcMonthly(n), 0);
   const totalHuman = workforceSelection.reduce((s,n) => { const p=WORKFORCE_LIBRARY[n]; return s+(p?Math.round(p.benchmark/12):0); }, 0);
@@ -700,11 +781,17 @@ export default function DavidModal({ isOpen, onClose }: { isOpen: boolean; onClo
               <img className="oi-meet-photo" src={PERSONAL_OI_PHOTO} alt="Your Personal OI" />
               <h3>Hi, I&rsquo;m your Personal OI.</h3>
               <p>Great to meet you.<br />Let&rsquo;s explore what I can do together.</p>
-              <p className="oi-meet-ask">What should I call you?</p>
-              <form className="oi-meet-row" onSubmit={e => { e.preventDefault(); submitName(); }}>
-                <input type="text" placeholder="Your first name" maxLength={30} value={nameVal} onChange={e => setNameVal(e.target.value)} autoFocus aria-label="Your first name" />
-                <button type="submit" aria-label="Continue"><Ico d={ICONS.arrow} size={20} sw={2} /></button>
+              <p className="oi-meet-ask">Let&rsquo;s get you set up.</p>
+              <form className="oi-meet-form" onSubmit={e => { e.preventDefault(); submitSignup(); }}>
+                <div className="oi-meet-form-row">
+                  <input type="text" placeholder="First name" maxLength={30} value={signup.firstName} onChange={e => setSignup(s => ({ ...s, firstName: e.target.value }))} required autoFocus aria-label="First name" />
+                  <input type="text" placeholder="Last name" maxLength={30} value={signup.lastName} onChange={e => setSignup(s => ({ ...s, lastName: e.target.value }))} required aria-label="Last name" />
+                </div>
+                <input type="email" placeholder="Email" value={signup.email} onChange={e => setSignup(s => ({ ...s, email: e.target.value }))} required aria-label="Email" />
+                <input type="tel" placeholder="Phone number (optional)" value={signup.phone} onChange={e => setSignup(s => ({ ...s, phone: e.target.value }))} aria-label="Phone number" />
+                <button type="submit" className="oi-btn oi-btn-white oi-btn-block" disabled={!signup.firstName.trim() || !signup.lastName.trim() || !signup.email.trim()}>Continue <Ico d={ICONS.arrow} size={16} sw={2} /></button>
               </form>
+              <p className="oi-meet-small">I&rsquo;ll generate a secure password for you automatically &mdash; no need to create one.</p>
             </div>
           </div>
 
@@ -731,6 +818,7 @@ export default function DavidModal({ isOpen, onClose }: { isOpen: boolean; onClo
                 ))}
               </div>
             )}
+            <button type="button" className="oi-link-btn" style={{ margin:'18px 0 0', display:'inline-flex', alignItems:'center', gap:4 }} onClick={goBack}><Ico d={ICONS.back} size={14} sw={2} /> Back</button>
           </div>
 
           {/* 3 · We create */}
@@ -752,7 +840,10 @@ export default function DavidModal({ isOpen, onClose }: { isOpen: boolean; onClo
                   ))}
                 </div>
                 <p className="oi-biz-note">It&rsquo;s completely fictional, so we can look around, ask questions and mess around.<strong>We can&rsquo;t break anything.</strong></p>
-                <button type="button" className="oi-btn oi-btn-navy oi-btn-block" onClick={() => setScreen('role')}>Continue <Ico d={ICONS.arrow} size={16} sw={2} /></button>
+                <div style={{ display:'flex', gap:10 }}>
+                  <button type="button" className="oi-btn oi-btn-outline" onClick={goBack}><Ico d={ICONS.back} size={16} sw={2} /> Back</button>
+                  <button type="button" className="oi-btn oi-btn-navy" style={{ flex:1 }} onClick={() => nav('role')}>Continue <Ico d={ICONS.arrow} size={16} sw={2} /></button>
+                </div>
               </div>
             )}
           </div>
@@ -768,6 +859,7 @@ export default function DavidModal({ isOpen, onClose }: { isOpen: boolean; onClo
                 <button key={pos} type="button" className={'oi-role'+(selRole===pos?' selected':'')} onClick={() => pickPosition(pos)}>{posLabel(sr.current.industry, pos)}</button>
               ))}
             </div>
+            <button type="button" className="oi-link-btn" style={{ margin:'18px 0 0', display:'inline-flex', alignItems:'center', gap:4 }} onClick={goBack}><Ico d={ICONS.back} size={14} sw={2} /> Back</button>
           </div>
 
           {/* 5 · connecting */}
@@ -778,6 +870,7 @@ export default function DavidModal({ isOpen, onClose }: { isOpen: boolean; onClo
           {/* 5 · My OI (Demo) */}
           <div className={'david-screen oi-chat-screen'+(sc('chat')?' active':'')} data-screen="chat">
             <div className="oi-chat-intro"><b>Let&rsquo;s play &mdash; Welcome to My OI.</b> You&rsquo;re now in the full My OI experience, using {biz?.name || 'your demo organisation'}.</div>
+            <button type="button" className="oi-link-btn" style={{ margin:'0 0 10px', display:'inline-flex', alignItems:'center', gap:4 }} onClick={goBack}><Ico d={ICONS.back} size={14} sw={2} /> Back</button>
             <div className="oi-shell">
               <aside className="oi-shell-side" aria-hidden="true">
                 <img className="oi-shell-logo" src={IMAGES.logo} alt="" />
@@ -813,9 +906,9 @@ export default function DavidModal({ isOpen, onClose }: { isOpen: boolean; onClo
                 )}
                 <div className={'oi-voice'+(listening?' listening':'')}>
                   <span className="oi-wave">{Array.from({ length: 9 }).map((_,i) => <i key={i}></i>)}</span>
-                  <button type="button" className="oi-mic" onClick={toggleMic} aria-label={listening ? 'Stop listening' : 'Speak to David'}><Ico d={ICONS.mic} size={20} sw={2} /></button>
+                  <button type="button" className={'oi-mic'+(!hasRecognition?' unsupported':'')} onClick={toggleMic} aria-label={listening ? 'Stop listening' : 'Speak to David'}><Ico d={ICONS.mic} size={20} sw={2} /></button>
                   <span className="oi-wave">{Array.from({ length: 9 }).map((_,i) => <i key={i}></i>)}</span>
-                  <div className="oi-voice-label">{listening ? 'David is listening…' : 'Tap the mic to talk to David'}</div>
+                  <div className={'oi-voice-label'+(micMessage?' oi-voice-error':'')}>{micMessage || (listening ? 'David is listening…' : hasRecognition ? 'Tap the mic to talk to David' : 'Voice input not supported here — type below')}</div>
                 </div>
                 <div className="oi-ask">
                   <Ico d={ICONS.mic} size={16} />
@@ -846,8 +939,8 @@ export default function DavidModal({ isOpen, onClose }: { isOpen: boolean; onClo
                 <div className="oi-infinity-banner"><span className="oi-feature-icon"><Ico d={ICONS.infinity} size={22} /></span><p>A workforce that understands your organisation, uses your knowledge and helps your people do more of what matters.</p></div>
               </div>
               <div className={'oi-imagine-actions'+(momentCount >= MOMENT_LINES.length ? ' show' : '')} style={{ display:'flex', justifyContent:'space-between', alignItems:'center', gap:10 }}>
-                <button type="button" className="oi-btn oi-btn-outline" onClick={() => setScreen('chat')}><Ico d={ICONS.back} size={16} sw={2} /> Back</button>
-                <button type="button" className="oi-btn oi-btn-blue" onClick={() => setScreen('offer')}>Show me what this could look like for my organisation <Ico d={ICONS.arrow} size={16} sw={2} /></button>
+                <button type="button" className="oi-btn oi-btn-outline" onClick={goBack}><Ico d={ICONS.back} size={16} sw={2} /> Back</button>
+                <button type="button" className="oi-btn oi-btn-blue" onClick={() => nav('offer')}>Show me what this could look like for my organisation <Ico d={ICONS.arrow} size={16} sw={2} /></button>
               </div>
             </div>
           </div>
@@ -870,10 +963,10 @@ export default function DavidModal({ isOpen, onClose }: { isOpen: boolean; onClo
                 ))}
               </div>
               <div style={{ display:'flex', gap:10, marginTop:18 }}>
-                <button type="button" className="oi-btn oi-btn-outline" onClick={() => setScreen('moment')}><Ico d={ICONS.back} size={16} sw={2} /> Back</button>
-                <button type="button" className="oi-btn oi-btn-blue" style={{ flex:1 }} onClick={() => { setOrgStage('form'); setScreen('company'); }}>Get to know my organisation <Ico d={ICONS.arrow} size={16} sw={2} /></button>
+                <button type="button" className="oi-btn oi-btn-outline" onClick={goBack}><Ico d={ICONS.back} size={16} sw={2} /> Back</button>
+                <button type="button" className="oi-btn oi-btn-blue" style={{ flex:1 }} onClick={() => { setOrgStage('form'); nav('company'); }}>Get to know my organisation <Ico d={ICONS.arrow} size={16} sw={2} /></button>
               </div>
-              <button type="button" className="oi-link-btn" onClick={() => setScreen('arrange')}>Prefer to loop in a colleague first?</button>
+              <button type="button" className="oi-link-btn" onClick={() => nav('arrange')}>Prefer to loop in a colleague first?</button>
               <button type="button" className="oi-link-btn" onClick={onClose}>I&rsquo;m not ready yet</button>
             </div>
           </div>
@@ -890,13 +983,13 @@ export default function DavidModal({ isOpen, onClose }: { isOpen: boolean; onClo
                   <label className="oi-field"><span>Their work email</span><input type="email" required value={invite.email} onChange={e => setInvite(v => ({ ...v, email: e.target.value }))} placeholder="name@company.com" /></label>
                   <button type="submit" className="oi-btn oi-btn-blue oi-btn-block" disabled={!invite.email.includes('@')}>Send invitation <Ico d={ICONS.arrow} size={16} sw={2} /></button>
                 </form>
-                <button type="button" className="oi-link-btn" onClick={() => setScreen('offer')}>&larr; Back</button>
+                <button type="button" className="oi-link-btn" onClick={goBack}>&larr; Back</button>
               </>) : (
                 <div className="oi-sent">
                   <span className="oi-offer-icon"><Ico d={ICONS.mail} size={26} /></span>
                   <h3 className="oi-card-title">Invitation on its way</h3>
                   <p className="oi-card-sub">I&rsquo;ll be in touch with {invite.name.trim() || invite.email} to find a time that works. In the meantime, you can start the experience yourself.</p>
-                  <button type="button" className="oi-btn oi-btn-blue oi-btn-block" onClick={() => { setOrgStage('form'); setScreen('company'); }}>Start my 7-Day Experience</button>
+                  <button type="button" className="oi-btn oi-btn-blue oi-btn-block" onClick={() => { setOrgStage('form'); nav('company'); }}>Start my 7-Day Experience</button>
                   <button type="button" className="oi-link-btn" onClick={onClose}>Close for now</button>
                 </div>
               )}
@@ -923,23 +1016,39 @@ export default function DavidModal({ isOpen, onClose }: { isOpen: boolean; onClo
                   <label className="oi-check"><input type="checkbox" checked={company.none} onChange={e => setCompany(c => ({ ...c, none: e.target.checked }))} /><span>I don&rsquo;t have a company yet</span></label>
                   <button type="submit" className="oi-btn oi-btn-blue oi-btn-block" disabled={!company.none && !company.company.trim()}><Ico d={ICONS.search} size={16} sw={2} /> Find my organisation <Ico d={ICONS.arrow} size={16} sw={2} /></button>
                 </form>
-                <button type="button" className="oi-link-btn" onClick={() => setScreen('offer')}>&larr; Back</button>
+                <button type="button" className="oi-link-btn" onClick={goBack}>&larr; Back</button>
               </>)}
               {orgStage === 'searching' && (
-                <div className="david-connecting">
-                  <div className="david-spinner"></div>
-                  <p>Give me a moment&hellip; I&rsquo;m searching and gathering publicly available information about your organisation.</p>
-                  <div className="david-loading-track" style={{ marginTop:16 }}><div className="david-loading-fill" style={{ width:orgPct+'%' }}></div></div>
+                <div className="oi-searching">
+                  <div className="oi-searching-top">
+                    <p>Give me a moment&hellip; I&rsquo;m searching and gathering publicly available information about your organisation.</p>
+                    <span className="oi-searching-icon"><Ico d={ICONS.search} size={18} sw={2} /></span>
+                  </div>
+                  <div className="david-loading-track"><div className="david-loading-fill" style={{ width:orgPct+'%' }}></div></div>
                 </div>
               )}
               {orgStage === 'found' && (<>
                 <h3 className="oi-card-title">I think I&rsquo;ve found you.</h3>
                 <div className="oi-found-card">
-                  <span className="oi-feature-icon oi-found-icon"><Ico d={INDUSTRY_ICONS[company.industry || sr.current.industry] || ICONS.store} size={22} /></span>
-                  <div className="oi-found-text">
+                  <div className="oi-found-photo-col">
+                    <div className="oi-found-photo" style={{ backgroundImage: 'url('+(INDUSTRY_PHOTOS[company.industry || sr.current.industry] || OFFICE_PHOTO)+')' }}></div>
+                    <span>{(company.none ? (sr.current.name !== 'there' ? sr.current.name + '’s future organisation' : 'Your future organisation') : (company.company.trim() || 'Your organisation')).toUpperCase()}</span>
+                  </div>
+                  <div className="oi-found-info">
                     <strong>{company.none ? (sr.current.name !== 'there' ? sr.current.name + '’s future organisation' : 'Your future organisation') : (company.company.trim() || 'Your organisation')}</strong>
-                    <span>{(company.industry || sr.current.industry || 'Professional Services')} &middot; {company.country || 'your region'}</span>
-                    <div className="oi-found-tags"><span className="oi-chip">LinkedIn</span><span className="oi-chip">Facebook</span><span className="oi-chip">Company news</span></div>
+                    <span className="oi-found-meta">{company.industry || sr.current.industry || 'Professional Services'}</span>
+                    <div className="oi-found-row"><Ico d={ICONS.pin} size={14} /><span>{company.country ? (CITY_BY_COUNTRY[company.country] || '') + (CITY_BY_COUNTRY[company.country] ? ', ' : '') + company.country : 'your region'}</span></div>
+                    {!company.none && company.website.trim() && <div className="oi-found-row"><Ico d={ICONS.link} size={14} /><span>{company.website}</span></div>}
+                    <p className="oi-found-desc">{(company.none ? (sr.current.name !== 'there' ? sr.current.name + '’s future organisation' : 'Your future organisation') : (company.company.trim() || 'Your organisation'))} operates in the {(company.industry || sr.current.industry || 'professional services').toLowerCase()} sector, based in {company.country ? (CITY_BY_COUNTRY[company.country] || company.country) : 'your region'}{company.country ? ', ' + company.country : ''}.</p>
+                  </div>
+                  <div className="oi-found-also-col">
+                    <div className="oi-found-also">Also found</div>
+                    <div className="oi-found-tags">
+                      <span className="oi-chip-sm"><Ico d={ICONS.briefcase} size={13} />LinkedIn</span>
+                      <span className="oi-chip-sm"><Ico d={ICONS.people} size={13} />Facebook</span>
+                      <span className="oi-chip-sm"><Ico d={ICONS.bolt} size={13} />X (Twitter)</span>
+                      <span className="oi-chip-sm"><Ico d={ICONS.file} size={13} />Company news</span>
+                    </div>
                   </div>
                 </div>
                 <div className="oi-form-grid" style={{ marginTop:16 }}>
@@ -1041,27 +1150,41 @@ export default function DavidModal({ isOpen, onClose }: { isOpen: boolean; onClo
           {/* 10 · What I understand about your company */}
           <div className={'david-screen oi-screen'+(sc('report')?' active':'')} data-screen="report">
             {crData && (
-              <div className="oi-card oi-narrow">
-                <ConsultantHead />
+              <div className="david-wizard" style={{ maxWidth:680 }}>
+                <div className="oi-brief-head">
+                  <div>
+                    <div className="david-eyebrow">Your Operational Intelligence Brief</div>
+                    <p className="oi-brief-head-sub">Here is what I understand about your organisation.</p>
+                  </div>
+                  <button type="button" className="oi-link-btn oi-edit-details" onClick={() => { setOrgStage('found'); nav('company'); }}><Ico d={ICONS.gear} size={13} sw={2} /> Edit details</button>
+                </div>
                 <div className="oi-brief">
                   <div className="oi-brief-text">
-                    <img src={IMAGES.logo} alt="Hyphen OI Workforce" />
-                    <h3>What I Understand About Your Company</h3>
-                    <p className="oi-brief-sub">An Operational Intelligence Brief</p>
-                    <ul>
-                      <li>{crData.company}</li>
-                      <li>{crData.country}</li>
-                      <li>{crData.industry}</li>
-                      <li>Generated {crData.date}</li>
-                    </ul>
+                    <ConsultantHead />
+                    <p>I&rsquo;ve combined what you told me with publicly available information to create an initial Operational Intelligence Brief about your organisation.</p>
+                    <p>You can review it below, download a full version and even share it with your team.</p>
                   </div>
-                  <div className="oi-brief-photo" style={{ backgroundImage: 'url('+OFFICE_PHOTO+')' }}><span>{crData.company}</span></div>
+                  <div className="oi-brief-photo" style={{ backgroundImage: 'url('+(INDUSTRY_PHOTOS[crData.industry] || OFFICE_PHOTO)+')' }}>
+                    <span>{crData.company}</span>
+                    <em>{crData.industry} &middot; {crData.country}{company.size ? ' · '+company.size+' people' : ''}</em>
+                  </div>
                 </div>
-                <div className="oi-brief-actions">
-                  <button type="button" className="oi-btn oi-btn-blue" onClick={() => setScreen('capacity-report')}>View Report Online <Ico d={ICONS.arrow} size={16} sw={2} /></button>
-                  <button type="button" className="oi-btn oi-btn-outline" onClick={() => window.print()}><Ico d={ICONS.download} size={17} sw={2} /> Download PDF</button>
+                <div className="oi-brief-grid">
+                  {BRIEF_CARDS.map((c,i) => (
+                    <div key={c.title} className="oi-brief-card">
+                      <span className="oi-brief-card-icon" style={{ background:BRIEF_COLORS[i % BRIEF_COLORS.length] }}><Ico d={ICONS[c.icon as keyof typeof ICONS]} size={16} sw={2} /></span>
+                      <strong>{c.title}</strong>
+                      <span>{c.text}</span>
+                    </div>
+                  ))}
                 </div>
-                <button type="button" className="oi-link-btn" onClick={startSevenDay}>Let&rsquo;s explore a 7-Day OI Experience &rarr;</button>
+                <button type="button" className="oi-link-btn" style={{ display:'block', textAlign:'center', marginBottom:14 }} onClick={() => nav('capacity-report')}>View the full interactive report &rarr;</button>
+                <div className="oi-brief-actions-row">
+                  <button type="button" className="oi-btn oi-btn-outline" onClick={goBack}><Ico d={ICONS.back} size={16} sw={2} /> Back</button>
+                  <button type="button" className="oi-btn oi-btn-outline" onClick={() => window.print()}><Ico d={ICONS.download} size={16} sw={2} /> Download full report</button>
+                  <button type="button" className="oi-btn oi-btn-outline"><Ico d={ICONS.link} size={16} sw={2} /> Share internally</button>
+                </div>
+                <button type="button" className="oi-btn oi-btn-blue oi-btn-block" onClick={startSevenDay}>Let&rsquo;s explore a 7-Day OI Experience <Ico d={ICONS.arrow} size={16} sw={2} /></button>
               </div>
             )}
           </div>
@@ -1083,7 +1206,7 @@ export default function DavidModal({ isOpen, onClose }: { isOpen: boolean; onClo
               </div>
             )}
             <div className="cr-paper-actions">
-              <button type="button" className="oi-btn oi-btn-outline" onClick={() => setScreen('report')}><Ico d={ICONS.back} size={16} sw={2} /> Back</button>
+              <button type="button" className="oi-btn oi-btn-outline" onClick={goBack}><Ico d={ICONS.back} size={16} sw={2} /> Back</button>
               <button type="button" className="oi-btn oi-btn-outline" onClick={() => window.print()}><Ico d={ICONS.download} size={17} sw={2} /> Download PDF</button>
               <button type="button" className="oi-btn oi-btn-blue" onClick={startSevenDay}>Continue <Ico d={ICONS.arrow} size={16} sw={2} /></button>
             </div>
@@ -1100,19 +1223,19 @@ export default function DavidModal({ isOpen, onClose }: { isOpen: boolean; onClo
               <div className="oi-howitworks">
                 <div className="oi-howitworks-title">What I&rsquo;ll be doing over the next 7 days</div>
                 <div className="oi-sevenday-grid">
-                  {SEVEN_DAY_ITEMS.map(it => (
-                    <div key={it.title} className="oi-sevenday-item"><span className="oi-feature-icon"><Ico d={ICONS[it.icon as keyof typeof ICONS]} size={18} /></span><strong>{it.title}</strong><span>{it.text}</span></div>
+                  {SEVEN_DAY_ITEMS.map((it,i) => (
+                    <div key={it.title} className="oi-sevenday-item"><span className="oi-feature-icon" style={{ background:BRIEF_COLORS[i % BRIEF_COLORS.length], color:'#fff' }}><Ico d={ICONS[it.icon as keyof typeof ICONS]} size={18} /></span><strong>{it.title}</strong><span>{it.text}</span></div>
                   ))}
                 </div>
               </div>
               <div className="oi-howitworks">
                 <div className="oi-howitworks-title">What you need to do</div>
                 <ul className="oi-check-list">
-                  {SEVEN_DAY_TODO.map(t => <li key={t}><Ico d={ICONS.check} size={14} sw={2.5} />{t}</li>)}
+                  {SEVEN_DAY_TODO.map((t,i) => <li key={t}><CheckDot i={i} />{t}</li>)}
                 </ul>
               </div>
               <div style={{ display:'flex', gap:10 }}>
-                <button type="button" className="oi-btn oi-btn-outline" onClick={() => setScreen('capacity-report')}><Ico d={ICONS.back} size={16} sw={2} /> Back</button>
+                <button type="button" className="oi-btn oi-btn-outline" onClick={goBack}><Ico d={ICONS.back} size={16} sw={2} /> Back</button>
                 <button type="button" className="oi-btn oi-btn-blue" style={{ flex:1 }} onClick={startWhatHappened}>Start my 7-Day Experience <Ico d={ICONS.arrow} size={16} sw={2} /></button>
               </div>
             </div>
@@ -1127,12 +1250,12 @@ export default function DavidModal({ isOpen, onClose }: { isOpen: boolean; onClo
               <p style={{ fontSize:14, fontWeight:600, color:'var(--navy)', marginBottom:10 }}>Here&rsquo;s what I&rsquo;ve done so far.</p>
               <div className="oi-stat-toolbar"><span>Show: Last 7 days &#9662;</span><span>{sevenDayRange()}</span></div>
               <div className="oi-stat-grid">
-                {EXPERIENCE_STATS.map(s => (
-                  <div key={s.label} className="oi-stat-tile"><span className="oi-feature-icon"><Ico d={ICONS[s.icon as keyof typeof ICONS]} size={18} /></span><strong>{s.value}</strong><span className="oi-stat-label">{s.label}</span><span className="oi-stat-text">{s.text}</span></div>
+                {EXPERIENCE_STATS.map((s,i) => (
+                  <div key={s.label} className="oi-stat-tile"><span className="oi-feature-icon" style={{ background:BRIEF_COLORS[i % BRIEF_COLORS.length], color:'#fff' }}><Ico d={ICONS[s.icon as keyof typeof ICONS]} size={18} /></span><strong>{s.value}</strong><span className="oi-stat-label">{s.label}</span><span className="oi-stat-text">{s.text}</span></div>
                 ))}
               </div>
               <div style={{ display:'flex', gap:10, flexWrap:'wrap', marginTop:16 }}>
-                <button type="button" className="oi-btn oi-btn-outline" onClick={() => setScreen('7day-start')}><Ico d={ICONS.back} size={16} sw={2} /> Back</button>
+                <button type="button" className="oi-btn oi-btn-outline" onClick={goBack}><Ico d={ICONS.back} size={16} sw={2} /> Back</button>
                 <button type="button" className="oi-btn oi-btn-outline" onClick={() => window.print()}><Ico d={ICONS.download} size={17} sw={2} /> Download full report</button>
                 <button type="button" className="oi-btn oi-btn-outline" onClick={() => { window.location.href = 'mailto:?subject=My OI Workforce — 7-Day Experience&body=Here is what my Personal OI has done this week.'; }}><Ico d={ICONS.mail} size={17} sw={2} /> Share internally</button>
                 <button type="button" className="oi-btn oi-btn-blue" style={{ flex:1 }} onClick={startValueReport}>See my OI Value Report <Ico d={ICONS.arrow} size={16} sw={2} /></button>
@@ -1162,11 +1285,11 @@ export default function DavidModal({ isOpen, onClose }: { isOpen: boolean; onClo
               <div className="oi-howitworks">
                 <div className="oi-howitworks-title">Other key outcomes</div>
                 <div className="oi-outcome-grid">
-                  {OTHER_OUTCOMES.map(o => <div key={o.title} className="oi-outcome-item"><Ico d={ICONS.check} size={14} sw={2.5} /><div><strong>{o.title}</strong><span>{o.text}</span></div></div>)}
+                  {OTHER_OUTCOMES.map((o,i) => <div key={o.title} className="oi-outcome-item"><CheckDot i={i} /><div><strong>{o.title}</strong><span>{o.text}</span></div></div>)}
                 </div>
               </div>
               <div style={{ display:'flex', gap:10, flexWrap:'wrap' }}>
-                <button type="button" className="oi-btn oi-btn-outline" onClick={() => setScreen('what-happened')}><Ico d={ICONS.back} size={16} sw={2} /> Back</button>
+                <button type="button" className="oi-btn oi-btn-outline" onClick={goBack}><Ico d={ICONS.back} size={16} sw={2} /> Back</button>
                 <button type="button" className="oi-btn oi-btn-outline" onClick={() => window.print()}><Ico d={ICONS.download} size={17} sw={2} /> Download full report</button>
                 <button type="button" className="oi-btn oi-btn-outline" onClick={() => { window.location.href = 'mailto:?subject=Our OI Value Report'; }}><Ico d={ICONS.people} size={17} sw={2} /> Share with your team</button>
                 <button type="button" className="oi-btn oi-btn-blue" style={{ flex:1 }} onClick={startBuildWorkforce}>See my recommended Workforce <Ico d={ICONS.arrow} size={16} sw={2} /></button>
@@ -1191,7 +1314,10 @@ export default function DavidModal({ isOpen, onClose }: { isOpen: boolean; onClo
                   );
                 })}
               </div>
-              <button className="oi-btn oi-btn-blue oi-btn-block" type="button" onClick={() => setScreen('pricing')}>See your investment <Ico d={ICONS.arrow} size={16} sw={2} /></button>
+              <div style={{ display:'flex', gap:10 }}>
+                <button type="button" className="oi-btn oi-btn-outline" onClick={goBack}><Ico d={ICONS.back} size={16} sw={2} /> Back</button>
+                <button className="oi-btn oi-btn-blue" style={{ flex:1 }} type="button" onClick={() => nav('pricing')}>See your investment <Ico d={ICONS.arrow} size={16} sw={2} /></button>
+              </div>
             </div>
           </div>
 
@@ -1238,7 +1364,10 @@ export default function DavidModal({ isOpen, onClose }: { isOpen: boolean; onClo
                 <div className="oi-invest-row oi-invest-total"><span>Total monthly investment</span><strong>{fmtMoney(totalOI,currency)}</strong><strong>{fmtMoney(annualOIWithDiscount,currency)}</strong></div>
               </div>
               <div className="cr-summary-box" style={{ fontWeight:600 }}>{workforceSelection.length===0?'No OI Consultants selected yet — add one above.':'That\'s '+fmtMoney(totalHuman-totalOI,currency)+' / month less than hiring the human equivalent.'}</div>
-              <button className="oi-btn oi-btn-blue oi-btn-block" type="button" style={{ fontSize:16, padding:'16px 24px' }} onClick={startLoading}>Employ my OI Workforce &rarr;</button>
+              <div style={{ display:'flex', gap:10, marginBottom:10 }}>
+                <button type="button" className="oi-btn oi-btn-outline" onClick={goBack}><Ico d={ICONS.back} size={16} sw={2} /> Back</button>
+                <button className="oi-btn oi-btn-blue" type="button" style={{ flex:1, fontSize:16, padding:'16px 24px' }} onClick={startLoading}>Employ my OI Workforce &rarr;</button>
+              </div>
               <p style={{ fontSize:12, color:'var(--grey)', textAlign:'center', marginTop:14, lineHeight:1.7 }}>No long-term contract. This pricing is fully editable at any time &mdash; swap, add or remove a role whenever you need to.</p>
             </div>
           </div>
@@ -1259,7 +1388,7 @@ export default function DavidModal({ isOpen, onClose }: { isOpen: boolean; onClo
               <h3 className="oi-card-title">Let&rsquo;s start working together</h3>
               <p className="oi-card-sub">Great! Your OI Workforce is ready to go.</p>
               <ul className="oi-check-list">
-                {WELCOME_CHECKLIST.map(t => <li key={t}><Ico d={ICONS.check} size={14} sw={2.5} />{t}</li>)}
+                {WELCOME_CHECKLIST.map((t,i) => <li key={t}><CheckDot i={i} />{t}</li>)}
               </ul>
               <div className="oi-howitworks">
                 <div className="oi-howitworks-title">What happens next?</div>
@@ -1269,7 +1398,10 @@ export default function DavidModal({ isOpen, onClose }: { isOpen: boolean; onClo
                   ))}
                 </div>
               </div>
-              <button type="button" className="oi-btn oi-btn-blue oi-btn-block" onClick={onClose}>Complete and start <Ico d={ICONS.arrow} size={16} sw={2} /></button>
+              <div style={{ display:'flex', gap:10, marginBottom:10 }}>
+                <button type="button" className="oi-btn oi-btn-outline" onClick={goBack}><Ico d={ICONS.back} size={16} sw={2} /> Back</button>
+                <button type="button" className="oi-btn oi-btn-blue" style={{ flex:1 }} onClick={onClose}>Complete and start <Ico d={ICONS.arrow} size={16} sw={2} /></button>
+              </div>
               <button type="button" className="oi-link-btn" onClick={startPersonalise}>Personalise my Personal OI</button>
             </div>
           </div>
@@ -1301,7 +1433,10 @@ export default function DavidModal({ isOpen, onClose }: { isOpen: boolean; onClo
                 <button type="button" className={personalStyle==='Direct and concise'?'selected':''} onClick={() => setPersonalStyle('Direct and concise')}>Direct and concise</button>
                 <button type="button" className={personalStyle==='Warm and detailed'?'selected':''} onClick={() => setPersonalStyle('Warm and detailed')}>Warm and detailed</button>
               </div>
-              <button className="oi-btn oi-btn-blue oi-btn-block" type="button" onClick={onClose}>Take me to My OI</button>
+              <div style={{ display:'flex', gap:10 }}>
+                <button type="button" className="oi-btn oi-btn-outline" onClick={goBack}><Ico d={ICONS.back} size={16} sw={2} /> Back</button>
+                <button className="oi-btn oi-btn-blue" style={{ flex:1 }} type="button" onClick={onClose}>Take me to My OI</button>
+              </div>
             </div>
           </div>
         </div>
