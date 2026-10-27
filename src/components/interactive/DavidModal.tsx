@@ -482,6 +482,8 @@ export default function DavidModal({ isOpen, onClose }: { isOpen: boolean; onClo
 
   useEffect(() => { if (chatLogRef.current) chatLogRef.current.scrollTop = chatLogRef.current.scrollHeight; }, [chatMsgs]);
   useEffect(() => { if (bodyRef.current) bodyRef.current.scrollTop = 0; }, [screen, discIdx]);
+  // The mic is hidden once "I've seen enough" shows, so stop any open listening session.
+  useEffect(() => { if (continueVisible) { try { recogRef.current?.stop(); } catch {} } }, [continueVisible]);
 
   const hasSpeech = typeof window !== 'undefined' && 'speechSynthesis' in window;
   const hasRecognition = typeof window !== 'undefined' && !!((window as unknown as { SpeechRecognition?: unknown; webkitSpeechRecognition?: unknown }).SpeechRecognition || (window as unknown as { SpeechRecognition?: unknown; webkitSpeechRecognition?: unknown }).webkitSpeechRecognition);
@@ -743,6 +745,8 @@ export default function DavidModal({ isOpen, onClose }: { isOpen: boolean; onClo
   const quickPrompts = [...unusedResp.filter(r => r.roles.includes(sr.current.position)), ...unusedResp.filter(r => !r.roles.includes(sr.current.position))].slice(0,4);
   const stepNum = SCREEN_STEP[screen] || 16;
   const isNextSteps = !SCREEN_STEP[screen];
+  const canGoBack = screen === 'discovery' || (!TRANSIENT_SCREENS.has(screen) && historyRef.current.length > 0);
+  const headerBack = screen === 'discovery' ? discBack : goBack;
   const userInitials = initialsOf(sr.current.name === 'there' ? '' : sr.current.name);
   function sevenDayRange(): string {
     const start = new Date(); const end = new Date(); end.setDate(end.getDate()+6);
@@ -756,19 +760,21 @@ export default function DavidModal({ isOpen, onClose }: { isOpen: boolean; onClo
 
   return (
     <div className="david-modal open" role="dialog" aria-modal="true" aria-label="Meet your Personal OI" onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
-      <div className="david-panel oi-panel">
+      <div className={'david-panel oi-panel'+(stepNum === 5 ? ' oi-step5' : '')+(screen === 'chat' ? ' oi-fixed-h' : '')}>
         <button className="david-close" onClick={onClose} aria-label="Close">&times;</button>
         <div className="david-topbar">
+          {canGoBack && <button type="button" className="oi-top-back" onClick={headerBack} aria-label="Back" title="Back"><Ico d={ICONS.back} size={15} sw={2.2} /></button>}
           <div className="oi-top-avatar"><img src={PERSONAL_OI_PHOTO} alt="" /><span className="live-dot"></span></div>
           <div className="david-topbar-text"><strong>Personal OI</strong><span>Your OI Consultant</span></div>
-          <div className="oi-stepper" aria-label={'Step '+stepNum+' of 16'}>
-            <div className="oi-stepper-label"><b>{isNextSteps ? 'Next steps' : 'Step '+stepNum+' of 16'}</b>{!isNextSteps && <span> &middot; {STEP_LABELS[stepNum-1]}</span>}</div>
-            <div className="oi-stepper-track">{STEP_LABELS.map((l,i) => <span key={l} className={i < stepNum ? 'done' : ''}></span>)}</div>
-          </div>
+          <ol className="oi-steps" aria-label={isNextSteps ? 'All steps complete' : 'Step '+stepNum+' of 16: '+STEP_LABELS[stepNum-1]}>
+            {STEP_LABELS.map((l,i) => {
+              const state = isNextSteps || i < stepNum-1 ? 'done' : i === stepNum-1 ? 'current' : '';
+              return <li key={l} className={state} title={(i+1)+'. '+l} aria-current={state === 'current' ? 'step' : undefined}>{i+1}</li>;
+            })}
+          </ol>
           {hasSpeech && (
-            <button className={'david-voice-toggle'+(voiceOn?' on':'')} type="button" onClick={() => { setVoiceOn(v => { if (v) { try { speechSynthesis.cancel(); } catch {} } return !v; }); }}>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 5L6 9H2v6h4l5 4V5z"/><path d="M19.07 4.93a10 10 0 010 14.14M15.54 8.46a5 5 0 010 7.07"/></svg>
-              <span>{voiceOn ? 'Voice on' : 'Voice off'}</span>
+            <button className={'david-voice-toggle'+(voiceOn?' on':'')} type="button" aria-pressed={voiceOn} aria-label={voiceOn ? 'Turn voice off' : 'Turn voice on'} title={voiceOn ? 'Voice on' : 'Voice off'} onClick={() => { setVoiceOn(v => { if (v) { try { speechSynthesis.cancel(); } catch {} } return !v; }); }}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M11 5L6 9H2v6h4l5 4V5z"/>{voiceOn ? <path d="M19.07 4.93a10 10 0 010 14.14M15.54 8.46a5 5 0 010 7.07"/> : <path d="M23 9l-6 6M17 9l6 6"/>}</svg>
             </button>
           )}
         </div>
@@ -818,7 +824,6 @@ export default function DavidModal({ isOpen, onClose }: { isOpen: boolean; onClo
                 ))}
               </div>
             )}
-            <button type="button" className="oi-link-btn" style={{ margin:'18px 0 0', display:'inline-flex', alignItems:'center', gap:4 }} onClick={goBack}><Ico d={ICONS.back} size={14} sw={2} /> Back</button>
           </div>
 
           {/* 3 · We create */}
@@ -841,7 +846,6 @@ export default function DavidModal({ isOpen, onClose }: { isOpen: boolean; onClo
                 </div>
                 <p className="oi-biz-note">It&rsquo;s completely fictional, so we can look around, ask questions and mess around.<strong>We can&rsquo;t break anything.</strong></p>
                 <div style={{ display:'flex', gap:10 }}>
-                  <button type="button" className="oi-btn oi-btn-outline" onClick={goBack}><Ico d={ICONS.back} size={16} sw={2} /> Back</button>
                   <button type="button" className="oi-btn oi-btn-navy" style={{ flex:1 }} onClick={() => nav('role')}>Continue <Ico d={ICONS.arrow} size={16} sw={2} /></button>
                 </div>
               </div>
@@ -859,7 +863,6 @@ export default function DavidModal({ isOpen, onClose }: { isOpen: boolean; onClo
                 <button key={pos} type="button" className={'oi-role'+(selRole===pos?' selected':'')} onClick={() => pickPosition(pos)}>{posLabel(sr.current.industry, pos)}</button>
               ))}
             </div>
-            <button type="button" className="oi-link-btn" style={{ margin:'18px 0 0', display:'inline-flex', alignItems:'center', gap:4 }} onClick={goBack}><Ico d={ICONS.back} size={14} sw={2} /> Back</button>
           </div>
 
           {/* 5 · connecting */}
@@ -870,7 +873,6 @@ export default function DavidModal({ isOpen, onClose }: { isOpen: boolean; onClo
           {/* 5 · My OI (Demo) */}
           <div className={'david-screen oi-chat-screen'+(sc('chat')?' active':'')} data-screen="chat">
             <div className="oi-chat-intro"><b>Let&rsquo;s play &mdash; Welcome to My OI.</b> You&rsquo;re now in the full My OI experience, using {biz?.name || 'your demo organisation'}.</div>
-            <button type="button" className="oi-link-btn" style={{ margin:'0 0 10px', display:'inline-flex', alignItems:'center', gap:4 }} onClick={goBack}><Ico d={ICONS.back} size={14} sw={2} /> Back</button>
             <div className="oi-shell">
               <aside className="oi-shell-side" aria-hidden="true">
                 <img className="oi-shell-logo" src={IMAGES.logo} alt="" />
@@ -901,20 +903,20 @@ export default function DavidModal({ isOpen, onClose }: { isOpen: boolean; onClo
                     : <div key={msg.id} className={'david-msg from-'+msg.from}>{(msg as {text:string}).text}</div>
                   )}
                 </div>
-                {continueVisible && (
+                {continueVisible ? (
                   <div className="oi-chat-next"><button className="david-continue-btn" type="button" onClick={startMoment}>I&rsquo;ve seen enough &mdash; what&rsquo;s next? &rarr;</button></div>
-                )}
-                <div className={'oi-voice'+(listening?' listening':'')}>
-                  <span className="oi-wave">{Array.from({ length: 9 }).map((_,i) => <i key={i}></i>)}</span>
-                  <button type="button" className={'oi-mic'+(!hasRecognition?' unsupported':'')} onClick={toggleMic} aria-label={listening ? 'Stop listening' : 'Speak to David'}><Ico d={ICONS.mic} size={20} sw={2} /></button>
-                  <span className="oi-wave">{Array.from({ length: 9 }).map((_,i) => <i key={i}></i>)}</span>
-                  <div className={'oi-voice-label'+(micMessage?' oi-voice-error':'')}>{micMessage || (listening ? 'David is listening…' : hasRecognition ? 'Tap the mic to talk to David' : 'Voice input not supported here — type below')}</div>
-                </div>
-                <div className="oi-ask">
-                  <Ico d={ICONS.mic} size={16} />
-                  <input type="text" ref={chatInputRef} placeholder="Ask me anything…" onKeyDown={e => { if (e.key==='Enter') sendChat((e.target as HTMLInputElement).value); }} />
-                  <button type="button" onClick={() => sendChat(chatInputRef.current?.value || '')} aria-label="Send"><Ico d={ICONS.arrow} size={16} sw={2.2} /></button>
-                </div>
+                ) : (<>
+                  <div className={'oi-voice'+(listening?' listening':'')}>
+                    <span className="oi-wave">{Array.from({ length: 9 }).map((_,i) => <i key={i}></i>)}</span>
+                    <button type="button" className={'oi-mic'+(!hasRecognition?' unsupported':'')} onClick={toggleMic} aria-label={listening ? 'Stop listening' : 'Speak to David'}><Ico d={ICONS.mic} size={20} sw={2} /></button>
+                    <span className="oi-wave">{Array.from({ length: 9 }).map((_,i) => <i key={i}></i>)}</span>
+                    <div className={'oi-voice-label'+(micMessage?' oi-voice-error':'')}>{micMessage || (listening ? 'David is listening…' : hasRecognition ? 'Tap the mic to talk to David' : 'Voice input not supported here — type below')}</div>
+                  </div>
+                  <div className="oi-ask">
+                    <input type="text" ref={chatInputRef} placeholder="Ask me anything…" onKeyDown={e => { if (e.key==='Enter') sendChat((e.target as HTMLInputElement).value); }} />
+                    <button type="button" onClick={() => sendChat(chatInputRef.current?.value || '')} aria-label="Send"><Ico d={ICONS.arrow} size={16} sw={2.2} /></button>
+                  </div>
+                </>)}
               </div>
             </div>
           </div>
@@ -922,7 +924,6 @@ export default function DavidModal({ isOpen, onClose }: { isOpen: boolean; onClo
           {/* 6 · Imagine if */}
           <div className={'david-screen oi-screen oi-center'+(sc('moment')?' active':'')} data-screen="moment">
             <div className="oi-imagine">
-              <ConsultantHead />
               <div className="oi-head" style={{ marginBottom:16 }}><h3>Imagine&hellip;</h3><p>Now picture this working for your organisation.</p></div>
               <div className="oi-imagine-body">
                 <img className="oi-imagine-photo" src={PERSONAL_OI_PHOTO} alt="" />
@@ -938,8 +939,7 @@ export default function DavidModal({ isOpen, onClose }: { isOpen: boolean; onClo
                 </div>
                 <div className="oi-infinity-banner"><span className="oi-feature-icon"><Ico d={ICONS.infinity} size={22} /></span><p>A workforce that understands your organisation, uses your knowledge and helps your people do more of what matters.</p></div>
               </div>
-              <div className={'oi-imagine-actions'+(momentCount >= MOMENT_LINES.length ? ' show' : '')} style={{ display:'flex', justifyContent:'space-between', alignItems:'center', gap:10 }}>
-                <button type="button" className="oi-btn oi-btn-outline" onClick={goBack}><Ico d={ICONS.back} size={16} sw={2} /> Back</button>
+              <div className={'oi-imagine-actions'+(momentCount >= MOMENT_LINES.length ? ' show' : '')} style={{ display:'flex', justifyContent:'flex-end', alignItems:'center', gap:10 }}>
                 <button type="button" className="oi-btn oi-btn-blue" onClick={() => nav('offer')}>Show me what this could look like for my organisation <Ico d={ICONS.arrow} size={16} sw={2} /></button>
               </div>
             </div>
@@ -948,10 +948,9 @@ export default function DavidModal({ isOpen, onClose }: { isOpen: boolean; onClo
           {/* 7 · Would you like me to come and work with you? */}
           <div className={'david-screen oi-screen'+(sc('offer')?' active':'')} data-screen="offer">
             <div className="oi-card oi-narrow">
-              <ConsultantHead />
-              <h3 className="oi-card-title" style={{ textAlign:'center', fontSize:22 }}>Would you like me to come and work with you?</h3>
+              <h3 className="oi-card-title" style={{ textAlign:'center' }}>Would you like me to come and work with you?</h3>
               <p className="oi-card-sub" style={{ textAlign:'center' }}>First, let me get to know your organisation.</p>
-              <p style={{ fontSize:14, color:'#31394A', lineHeight:1.6, marginBottom:20 }}>I can quickly research your organisation, ask you a few short questions and show you what I understand. You&rsquo;ll get a personalised Operational Intelligence Brief that you can review, download and even share with your team. If you like what you see, you can then invite me to work with you for the next 7 days &mdash; <strong>FREE</strong> &mdash; so I can show you what I can actually do for you.</p>
+              <p className="oi-offer-intro">I can quickly research your organisation, ask you a few short questions and show you what I understand. You&rsquo;ll get a personalised Operational Intelligence Brief that you can review, download and even share with your team. If you like what you see, you can then invite me to work with you for the next 7 days &mdash; <strong>FREE</strong> &mdash; so I can show you what I can actually do for you.</p>
               <div className="oi-howitworks">
                 <div className="oi-howitworks-title">Here&rsquo;s how it works</div>
                 {HOW_IT_WORKS.map((s,i) => (
@@ -962,19 +961,19 @@ export default function DavidModal({ isOpen, onClose }: { isOpen: boolean; onClo
                   </div>
                 ))}
               </div>
-              <div style={{ display:'flex', gap:10, marginTop:18 }}>
-                <button type="button" className="oi-btn oi-btn-outline" onClick={goBack}><Ico d={ICONS.back} size={16} sw={2} /> Back</button>
+              <div style={{ display:'flex', gap:10, marginTop:14 }}>
                 <button type="button" className="oi-btn oi-btn-blue" style={{ flex:1 }} onClick={() => { setOrgStage('form'); nav('company'); }}>Get to know my organisation <Ico d={ICONS.arrow} size={16} sw={2} /></button>
               </div>
-              <button type="button" className="oi-link-btn" onClick={() => nav('arrange')}>Prefer to loop in a colleague first?</button>
-              <button type="button" className="oi-link-btn" onClick={onClose}>I&rsquo;m not ready yet</button>
+              <div className="oi-offer-links">
+                <button type="button" className="oi-link-btn" onClick={() => nav('arrange')}>Prefer to loop in a colleague first?</button>
+                <button type="button" className="oi-link-btn" onClick={onClose}>I&rsquo;m not ready yet</button>
+              </div>
             </div>
           </div>
 
           {/* 7b · Arrange a conversation (secondary entry point) */}
           <div className={'david-screen oi-screen'+(sc('arrange')?' active':'')} data-screen="arrange">
             <div className="oi-card oi-narrow oi-form">
-              <ConsultantHead />
               {!invite.sent ? (<>
                 <h3 className="oi-card-title">Who should join us?</h3>
                 <p className="oi-card-sub">I&rsquo;ll invite them to a short conversation so you can explore OI Workforce together.</p>
@@ -983,7 +982,6 @@ export default function DavidModal({ isOpen, onClose }: { isOpen: boolean; onClo
                   <label className="oi-field"><span>Their work email</span><input type="email" required value={invite.email} onChange={e => setInvite(v => ({ ...v, email: e.target.value }))} placeholder="name@company.com" /></label>
                   <button type="submit" className="oi-btn oi-btn-blue oi-btn-block" disabled={!invite.email.includes('@')}>Send invitation <Ico d={ICONS.arrow} size={16} sw={2} /></button>
                 </form>
-                <button type="button" className="oi-link-btn" onClick={goBack}>&larr; Back</button>
               </>) : (
                 <div className="oi-sent">
                   <span className="oi-offer-icon"><Ico d={ICONS.mail} size={26} /></span>
@@ -1016,7 +1014,6 @@ export default function DavidModal({ isOpen, onClose }: { isOpen: boolean; onClo
                   <label className="oi-check"><input type="checkbox" checked={company.none} onChange={e => setCompany(c => ({ ...c, none: e.target.checked }))} /><span>I don&rsquo;t have a company yet</span></label>
                   <button type="submit" className="oi-btn oi-btn-blue oi-btn-block" disabled={!company.none && !company.company.trim()}><Ico d={ICONS.search} size={16} sw={2} /> Find my organisation <Ico d={ICONS.arrow} size={16} sw={2} /></button>
                 </form>
-                <button type="button" className="oi-link-btn" onClick={goBack}>&larr; Back</button>
               </>)}
               {orgStage === 'searching' && (
                 <div className="oi-searching">
@@ -1140,7 +1137,6 @@ export default function DavidModal({ isOpen, onClose }: { isOpen: boolean; onClo
                   {discSel.includes(OTHER_OPTION) && <input className="oi-other-input" type="text" placeholder="Tell me more…" value={otherText} onChange={e => setOtherText(e.target.value)} autoFocus />}
                 </>)}
                 <div style={{ display:'flex', gap:10, marginTop:14 }}>
-                  <button type="button" className="oi-btn oi-btn-outline" onClick={discBack}><Ico d={ICONS.back} size={16} sw={2} /> Back</button>
                   <button type="button" className="oi-btn oi-btn-blue" style={{ flex:1 }} disabled={!currentDiscQ.freeText && (discSel.length===0 || discNeedsOther)} onClick={confirmDisc}>{discIdx === sr.current.activeQuestions.length-1 ? 'Continue' : 'Next'} <Ico d={ICONS.arrow} size={16} sw={2} /></button>
                 </div>
               </div>
@@ -1180,7 +1176,6 @@ export default function DavidModal({ isOpen, onClose }: { isOpen: boolean; onClo
                 </div>
                 <button type="button" className="oi-link-btn" style={{ display:'block', textAlign:'center', marginBottom:14 }} onClick={() => nav('capacity-report')}>View the full interactive report &rarr;</button>
                 <div className="oi-brief-actions-row">
-                  <button type="button" className="oi-btn oi-btn-outline" onClick={goBack}><Ico d={ICONS.back} size={16} sw={2} /> Back</button>
                   <button type="button" className="oi-btn oi-btn-outline" onClick={() => window.print()}><Ico d={ICONS.download} size={16} sw={2} /> Download full report</button>
                   <button type="button" className="oi-btn oi-btn-outline"><Ico d={ICONS.link} size={16} sw={2} /> Share internally</button>
                 </div>
@@ -1206,7 +1201,6 @@ export default function DavidModal({ isOpen, onClose }: { isOpen: boolean; onClo
               </div>
             )}
             <div className="cr-paper-actions">
-              <button type="button" className="oi-btn oi-btn-outline" onClick={goBack}><Ico d={ICONS.back} size={16} sw={2} /> Back</button>
               <button type="button" className="oi-btn oi-btn-outline" onClick={() => window.print()}><Ico d={ICONS.download} size={17} sw={2} /> Download PDF</button>
               <button type="button" className="oi-btn oi-btn-blue" onClick={startSevenDay}>Continue <Ico d={ICONS.arrow} size={16} sw={2} /></button>
             </div>
@@ -1217,9 +1211,9 @@ export default function DavidModal({ isOpen, onClose }: { isOpen: boolean; onClo
             <div className="oi-card oi-narrow">
               <ConsultantHead />
               <h3 className="oi-card-title">Your 7-Day OI Experience Starts Now</h3>
-              <p style={{ fontSize:14, color:'#31394A', lineHeight:1.6, marginBottom:14 }}>Great! I now understand your organisation, and I&rsquo;m ready to start working with you.</p>
+              <p className="oi-7d-intro">Great! I now understand your organisation, and I&rsquo;m ready to start working with you.</p>
               <div className="oi-day-badge"><strong>Day 1 of 7 &middot; 7-Day OI Experience</strong><span>{sevenDayRange()}</span></div>
-              <p style={{ fontSize:13.5, color:'var(--grey)', margin:'12px 0 18px' }}>We&rsquo;re just getting started. I&rsquo;ll keep you updated as we go.</p>
+              <p className="oi-7d-note">We&rsquo;re just getting started. I&rsquo;ll keep you updated as we go.</p>
               <div className="oi-howitworks">
                 <div className="oi-howitworks-title">What I&rsquo;ll be doing over the next 7 days</div>
                 <div className="oi-sevenday-grid">
@@ -1235,7 +1229,6 @@ export default function DavidModal({ isOpen, onClose }: { isOpen: boolean; onClo
                 </ul>
               </div>
               <div style={{ display:'flex', gap:10 }}>
-                <button type="button" className="oi-btn oi-btn-outline" onClick={goBack}><Ico d={ICONS.back} size={16} sw={2} /> Back</button>
                 <button type="button" className="oi-btn oi-btn-blue" style={{ flex:1 }} onClick={startWhatHappened}>Start my 7-Day Experience <Ico d={ICONS.arrow} size={16} sw={2} /></button>
               </div>
             </div>
@@ -1246,16 +1239,15 @@ export default function DavidModal({ isOpen, onClose }: { isOpen: boolean; onClo
             <div className="oi-card oi-narrow">
               <ConsultantHead />
               <h3 className="oi-card-title">What happened during your 7-day Experience?</h3>
-              <p style={{ fontSize:14, color:'#31394A', lineHeight:1.6 }}>Over the past 7 days, I&rsquo;ve been learning from your organisation, completing real work and connecting your information.</p>
-              <p style={{ fontSize:14, fontWeight:600, color:'var(--navy)', marginBottom:10 }}>Here&rsquo;s what I&rsquo;ve done so far.</p>
+              <p className="oi-wh-intro">Over the past 7 days, I&rsquo;ve been learning from your organisation, completing real work and connecting your information.</p>
+              <p className="oi-wh-lead">Here&rsquo;s what I&rsquo;ve done so far.</p>
               <div className="oi-stat-toolbar"><span>Show: Last 7 days &#9662;</span><span>{sevenDayRange()}</span></div>
               <div className="oi-stat-grid">
                 {EXPERIENCE_STATS.map((s,i) => (
                   <div key={s.label} className="oi-stat-tile"><span className="oi-feature-icon" style={{ background:BRIEF_COLORS[i % BRIEF_COLORS.length], color:'#fff' }}><Ico d={ICONS[s.icon as keyof typeof ICONS]} size={18} /></span><strong>{s.value}</strong><span className="oi-stat-label">{s.label}</span><span className="oi-stat-text">{s.text}</span></div>
                 ))}
               </div>
-              <div style={{ display:'flex', gap:10, flexWrap:'wrap', marginTop:16 }}>
-                <button type="button" className="oi-btn oi-btn-outline" onClick={goBack}><Ico d={ICONS.back} size={16} sw={2} /> Back</button>
+              <div className="oi-wh-actions">
                 <button type="button" className="oi-btn oi-btn-outline" onClick={() => window.print()}><Ico d={ICONS.download} size={17} sw={2} /> Download full report</button>
                 <button type="button" className="oi-btn oi-btn-outline" onClick={() => { window.location.href = 'mailto:?subject=My OI Workforce — 7-Day Experience&body=Here is what my Personal OI has done this week.'; }}><Ico d={ICONS.mail} size={17} sw={2} /> Share internally</button>
                 <button type="button" className="oi-btn oi-btn-blue" style={{ flex:1 }} onClick={startValueReport}>See my OI Value Report <Ico d={ICONS.arrow} size={16} sw={2} /></button>
@@ -1268,7 +1260,7 @@ export default function DavidModal({ isOpen, onClose }: { isOpen: boolean; onClo
             <div className="oi-card oi-narrow">
               <ConsultantHead />
               <h3 className="oi-card-title">Your OI Value Report</h3>
-              <p style={{ fontSize:14, color:'#31394A', lineHeight:1.6, marginBottom:14 }}>Here&rsquo;s what I&rsquo;ve learned, what I&rsquo;ve done and the value I can bring.</p>
+              <p className="oi-vr-intro">Here&rsquo;s what I&rsquo;ve learned, what I&rsquo;ve done and the value I can bring.</p>
               <div className="oi-badge-row">
                 <span className="oi-badge pink"><Ico d={ICONS.store} size={14} /> Spend less</span>
                 <span className="oi-badge blue"><Ico d={ICONS.bolt} size={14} /> Do more</span>
@@ -1288,8 +1280,7 @@ export default function DavidModal({ isOpen, onClose }: { isOpen: boolean; onClo
                   {OTHER_OUTCOMES.map((o,i) => <div key={o.title} className="oi-outcome-item"><CheckDot i={i} /><div><strong>{o.title}</strong><span>{o.text}</span></div></div>)}
                 </div>
               </div>
-              <div style={{ display:'flex', gap:10, flexWrap:'wrap' }}>
-                <button type="button" className="oi-btn oi-btn-outline" onClick={goBack}><Ico d={ICONS.back} size={16} sw={2} /> Back</button>
+              <div className="oi-wh-actions">
                 <button type="button" className="oi-btn oi-btn-outline" onClick={() => window.print()}><Ico d={ICONS.download} size={17} sw={2} /> Download full report</button>
                 <button type="button" className="oi-btn oi-btn-outline" onClick={() => { window.location.href = 'mailto:?subject=Our OI Value Report'; }}><Ico d={ICONS.people} size={17} sw={2} /> Share with your team</button>
                 <button type="button" className="oi-btn oi-btn-blue" style={{ flex:1 }} onClick={startBuildWorkforce}>See my recommended Workforce <Ico d={ICONS.arrow} size={16} sw={2} /></button>
@@ -1302,7 +1293,7 @@ export default function DavidModal({ isOpen, onClose }: { isOpen: boolean; onClo
             <div className="david-wizard" style={{ maxWidth:560 }}>
               <div className="david-eyebrow">Your Recommended Workforce&trade;</div>
               <div className="david-wizard-q">Based on our chat, here&rsquo;s the OI Workforce I&rsquo;d recommend — built around what you told me matters: {answerText(sr.current.orgAnswers,'goals','your top priorities')}.</div>
-              <div style={{ display:'flex', flexDirection:'column', gap:10, marginBottom:16 }}>
+              <div className="oi-wf-list">
                 {workforceSelection.map(name => {
                   const p = WORKFORCE_LIBRARY[name]; if (!p) return null;
                   const initials = name.split(' ').map(x=>x[0]).join(''); const photo = CONSULTANT_PHOTOS[name];
@@ -1315,7 +1306,6 @@ export default function DavidModal({ isOpen, onClose }: { isOpen: boolean; onClo
                 })}
               </div>
               <div style={{ display:'flex', gap:10 }}>
-                <button type="button" className="oi-btn oi-btn-outline" onClick={goBack}><Ico d={ICONS.back} size={16} sw={2} /> Back</button>
                 <button className="oi-btn oi-btn-blue" style={{ flex:1 }} type="button" onClick={() => nav('pricing')}>See your investment <Ico d={ICONS.arrow} size={16} sw={2} /></button>
               </div>
             </div>
@@ -1326,14 +1316,14 @@ export default function DavidModal({ isOpen, onClose }: { isOpen: boolean; onClo
             <div className="david-wizard" style={{ maxWidth:580 }}>
               <div className="david-eyebrow">Your Investment</div>
               <div className="david-wizard-q">Estimated annual value {fmtMoney(capabilityValue, currency)}</div>
-              <p style={{ fontSize:13, color:'var(--grey)', margin:'-8px 0 14px', textAlign:'center' }}>Adjust this to fit your budget &mdash; remove a role, or swap it for a different one.</p>
-              <div style={{ display:'flex', justifyContent:'center', alignItems:'center', gap:8, marginBottom:16 }}>
-                <label style={{ fontSize:12, color:'var(--grey)', fontWeight:600, textTransform:'uppercase', letterSpacing:'.03em' }}>Currency</label>
+              <p className="oi-price-intro">Adjust this to fit your budget &mdash; remove a role, or swap it for a different one.</p>
+              <div className="oi-price-currency">
+                <label>Currency</label>
                 <select className="oi-select-sm" value={currency} onChange={e => setCurrency(e.target.value as Currency)}>
                   <option value="USD">USD $</option><option value="GBP">GBP £</option><option value="EUR">EUR €</option><option value="GHS">GHS ₵</option>
                 </select>
               </div>
-              <div style={{ marginBottom:10 }}>
+              <div className="oi-price-list">
                 {workforceSelection.map((name,idx) => {
                   const p=WORKFORCE_LIBRARY[name]; if (!p) return null;
                   const mOI=calcMonthly(name); const mH=Math.round(p.benchmark/12); const photo=CONSULTANT_PHOTOS[name];
@@ -1358,17 +1348,16 @@ export default function DavidModal({ isOpen, onClose }: { isOpen: boolean; onClo
                   );
                 })}
               </div>
-              <button type="button" className="oi-btn oi-btn-outline oi-btn-block" style={{ marginBottom:16 }} onClick={() => { const u=Object.keys(WORKFORCE_LIBRARY).find(n=>!workforceSelection.includes(n)); if(u) setWorkforceSelection(prev=>[...prev,u]); }}>+ Add another OI Consultant</button>
+              <button type="button" className="oi-btn oi-btn-outline oi-btn-block oi-price-add" onClick={() => { const u=Object.keys(WORKFORCE_LIBRARY).find(n=>!workforceSelection.includes(n)); if(u) setWorkforceSelection(prev=>[...prev,u]); }}>+ Add another OI Consultant</button>
               <div className="oi-invest-summary">
                 <div className="oi-invest-row oi-invest-head"><span>Total investment</span><span>Monthly</span><span>Annual (-10%)</span></div>
                 <div className="oi-invest-row oi-invest-total"><span>Total monthly investment</span><strong>{fmtMoney(totalOI,currency)}</strong><strong>{fmtMoney(annualOIWithDiscount,currency)}</strong></div>
               </div>
               <div className="cr-summary-box" style={{ fontWeight:600 }}>{workforceSelection.length===0?'No OI Consultants selected yet — add one above.':'That\'s '+fmtMoney(totalHuman-totalOI,currency)+' / month less than hiring the human equivalent.'}</div>
               <div style={{ display:'flex', gap:10, marginBottom:10 }}>
-                <button type="button" className="oi-btn oi-btn-outline" onClick={goBack}><Ico d={ICONS.back} size={16} sw={2} /> Back</button>
-                <button className="oi-btn oi-btn-blue" type="button" style={{ flex:1, fontSize:16, padding:'16px 24px' }} onClick={startLoading}>Employ my OI Workforce &rarr;</button>
+                <button className="oi-btn oi-btn-blue oi-employ-btn" type="button" onClick={startLoading}>Employ my OI Workforce &rarr;</button>
               </div>
-              <p style={{ fontSize:12, color:'var(--grey)', textAlign:'center', marginTop:14, lineHeight:1.7 }}>No long-term contract. This pricing is fully editable at any time &mdash; swap, add or remove a role whenever you need to.</p>
+              <p className="oi-price-note">No long-term contract. This pricing is fully editable at any time &mdash; swap, add or remove a role whenever you need to.</p>
             </div>
           </div>
 
@@ -1399,7 +1388,6 @@ export default function DavidModal({ isOpen, onClose }: { isOpen: boolean; onClo
                 </div>
               </div>
               <div style={{ display:'flex', gap:10, marginBottom:10 }}>
-                <button type="button" className="oi-btn oi-btn-outline" onClick={goBack}><Ico d={ICONS.back} size={16} sw={2} /> Back</button>
                 <button type="button" className="oi-btn oi-btn-blue" style={{ flex:1 }} onClick={onClose}>Complete and start <Ico d={ICONS.arrow} size={16} sw={2} /></button>
               </div>
               <button type="button" className="oi-link-btn" onClick={startPersonalise}>Personalise my Personal OI</button>
@@ -1434,7 +1422,6 @@ export default function DavidModal({ isOpen, onClose }: { isOpen: boolean; onClo
                 <button type="button" className={personalStyle==='Warm and detailed'?'selected':''} onClick={() => setPersonalStyle('Warm and detailed')}>Warm and detailed</button>
               </div>
               <div style={{ display:'flex', gap:10 }}>
-                <button type="button" className="oi-btn oi-btn-outline" onClick={goBack}><Ico d={ICONS.back} size={16} sw={2} /> Back</button>
                 <button className="oi-btn oi-btn-blue" style={{ flex:1 }} type="button" onClick={onClose}>Take me to My OI</button>
               </div>
             </div>

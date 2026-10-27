@@ -103,10 +103,9 @@
   .cr-final-note{ font-size:13px; color:var(--grey); text-align:center; margin-top:14px; }
 
   /* ===================== MEET DAVID EXPERIENCE ===================== */
-  .david-modal{ position:fixed; inset:0; z-index:500; background:rgba(0,10,30,.55); backdrop-filter:blur(4px); display:flex; align-items:center; justify-content:center; padding:24px; opacity:0; pointer-events:none; transition:opacity .3s ease; }
+  .david-modal{ position:fixed; inset:0; z-index:500; background:rgba(0,10,30,.55); -webkit-backdrop-filter:blur(14px); backdrop-filter:blur(14px); display:flex; align-items:center; justify-content:center; padding:24px; opacity:0; pointer-events:none; transition:opacity .3s ease; }
   .david-modal.open{ opacity:1; pointer-events:auto; }
   .david-panel{ background:var(--white); width:100%; max-width:920px; height:min(860px, 94vh); border-radius:20px; overflow:hidden; display:flex; flex-direction:column; position:relative; box-shadow:0 40px 100px rgba(0,10,40,.4); transform:translateY(20px) scale(.98); transition:transform .3s ease, max-width .25s ease; }
-  .david-panel::before{ content:""; position:absolute; top:0; left:0; right:0; height:4px; background:linear-gradient(115deg, var(--navy) 0%, var(--blue) 60%, var(--deepteal) 100%); z-index:2; }
   .david-modal.open .david-panel{ transform:none; }
   .david-close{ position:absolute; top:16px; right:16px; z-index:5; width:36px; height:36px; border-radius:50%; background:rgba(0,27,92,.06); border:none; color:var(--navy); font-size:20px; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:background .2s ease; }
   .david-close:hover{ background:rgba(0,27,92,.12); }
@@ -312,7 +311,7 @@
   @media (max-width:600px){ .david-panel{ height:100vh; max-height:100vh; border-radius:0; } .david-modal{ padding:0; } }
   @media (prefers-reduced-motion: reduce){ .david-modal, .david-panel, .david-msg.thinking span, .david-mic-btn.listening, .david-spinner{ transition:none !important; animation:none !important; } }
 
-  .lightbox{ position:fixed; inset:0; background:rgba(0,10,30,.88); display:flex; align-items:center; justify-content:center; z-index:300; opacity:0; pointer-events:none; transition:opacity .25s ease; padding:5vh 5vw; }
+  .lightbox{ position:fixed; inset:0; background:rgba(0,10,30,.88); -webkit-backdrop-filter:blur(14px); backdrop-filter:blur(14px); display:flex; align-items:center; justify-content:center; z-index:300; opacity:0; pointer-events:none; transition:opacity .25s ease; padding:5vh 5vw; }
   .lightbox.open{ opacity:1; pointer-events:auto; }
   .lightbox img{ max-width:100%; max-height:90vh; border-radius:10px; box-shadow:0 40px 100px rgba(0,0,0,.5); }
   .lightbox-close{ position:absolute; top:22px; right:26px; width:44px; height:44px; border-radius:50%; background:rgba(255,255,255,.12); border:1px solid rgba(255,255,255,.3); color:#fff; font-size:22px; line-height:1; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:background .2s ease; }
@@ -923,19 +922,41 @@
   .david-navy-screen .david-avatar-lg{ background:rgba(255,255,255,.15); border:1.5px solid rgba(255,255,255,.35); }
 
   /* ===================== PERSONAL OI JOURNEY (10-step light redesign) ===================== */
-  .oi-panel{ max-width:980px; height:min(800px, 92vh); }
-  .oi-panel .david-topbar{ padding:14px 60px 14px 20px; gap:12px; }
-  .oi-top-avatar{ position:relative; width:40px; height:40px; flex:none; }
-  .oi-top-avatar img{ width:40px; height:40px; border-radius:50%; object-fit:cover; }
-  .oi-top-avatar .live-dot{ position:absolute; bottom:-1px; right:-1px; width:11px; height:11px; border-radius:50%; background:#22C55E; border:2px solid #fff; }
-  .oi-stepper{ flex:1; max-width:340px; margin:0 auto; min-width:0; }
-  .oi-stepper-label{ font-size:11.5px; color:var(--grey); margin-bottom:6px; text-align:center; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-  .oi-stepper-label b{ color:var(--navy); font-weight:700; text-transform:uppercase; letter-spacing:.05em; font-size:10.5px; }
-  .oi-stepper-track{ display:grid; grid-template-columns:repeat(16,1fr); gap:3px; }
-  .oi-stepper-track span{ height:4px; border-radius:3px; background:var(--line); transition:background .3s ease; }
-  .oi-stepper-track span.done{ background:linear-gradient(90deg, var(--navy), var(--blue)); }
-  .oi-panel .david-voice-toggle{ margin-left:0; }
-  @media (max-width:640px){ .oi-stepper-label span{ display:none; } .oi-panel .david-topbar-text{ display:none; } }
+  /* Every step uses the same narrow width as the step-1 blue card; height follows content (only chat is fixed). */
+  .oi-panel{ max-width:560px; height:auto; max-height:min(860px, 94vh); transition:transform .3s ease, max-width .3s ease; }
+  .oi-panel.oi-fixed-h{ height:min(800px, 92vh); }
+  /* Step 5 (My OI demo) keeps its original wide layout. */
+  .oi-panel.oi-step5{ max-width:980px; }
+  .oi-panel .david-screen{ min-height:0; }
+  .oi-panel.oi-fixed-h .david-screen{ min-height:100%; }
+  /* Long pages still scroll (wheel / touch / keyboard), but no scrollbar is drawn anywhere in the popup. */
+  .oi-panel, .oi-panel :not(.oi-chat-log){ scrollbar-width:none; -ms-overflow-style:none; }
+  .oi-panel::-webkit-scrollbar, .oi-panel :not(.oi-chat-log)::-webkit-scrollbar{ display:none; width:0; height:0; }
+  .oi-panel .oi-screen[data-screen="intro"]{ padding:0; background:none; }
+  .oi-panel .oi-meet-card{ max-width:none; border-radius:0; box-shadow:none; }
+  .oi-panel .david-topbar{ padding:10px 56px 10px 14px; gap:10px; flex-wrap:wrap; }
+  .oi-panel .david-close{ top:10px; right:12px; width:32px; height:32px; font-size:18px; }
+  .oi-panel .david-topbar-text strong{ font-size:13px; }
+  .oi-panel .david-topbar-text span{ font-size:11px; }
+  .oi-top-avatar{ position:relative; width:30px; height:30px; flex:none; }
+  .oi-top-avatar img{ width:30px; height:30px; border-radius:50%; object-fit:cover; }
+  .oi-top-avatar .live-dot{ position:absolute; bottom:-1px; right:-1px; width:9px; height:9px; margin:0; border-radius:50%; background:#22C55E; border:2px solid #fff; }
+  /* Desktop: numbered steps sit between the name and the voice button. Small screens: they move to their own row. */
+  @media (min-width:761px){
+    .oi-panel .david-topbar{ flex-wrap:nowrap; gap:8px; }
+    .oi-panel:not(.oi-step5) .oi-steps{ flex-wrap:nowrap; gap:2px; }
+    .oi-panel:not(.oi-step5) .oi-steps li{ width:16px; height:16px; font-size:8.5px; border-width:1px; }
+  }
+  @media (max-width:760px){ .oi-panel .oi-steps{ order:10; flex-basis:100%; margin-right:-42px; } .oi-panel .david-topbar .david-voice-toggle{ margin-left:auto; } }
+  @media (max-width:440px){ .oi-panel .oi-steps{ flex-wrap:nowrap; gap:3px; } .oi-steps li{ width:18px; height:18px; font-size:9px; } }
+  @media (max-width:600px){ .oi-panel{ max-height:100vh; } .oi-panel.oi-fixed-h{ height:100vh; } }
+  .oi-steps{ flex:1; min-width:0; display:flex; flex-wrap:wrap; justify-content:center; gap:4px; list-style:none; margin:0; padding:0; }
+  .oi-steps li{ width:20px; height:20px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:10px; font-weight:700; line-height:1; color:var(--grey); background:#fff; border:1.5px solid var(--line); transition:background .3s ease, color .3s ease, border-color .3s ease, box-shadow .3s ease; }
+  .oi-steps li.done{ background:#22C55E; border-color:#22C55E; color:#fff; }
+  .oi-steps li.current{ background:#EF4444; border-color:#EF4444; color:#fff; box-shadow:0 0 0 3px rgba(239,68,68,.2); }
+  .oi-top-back{ width:28px; height:28px; flex:none; border-radius:50%; border:none; background:rgba(0,27,92,.06); color:var(--navy); display:flex; align-items:center; justify-content:center; cursor:pointer; transition:background .2s ease; }
+  .oi-top-back:hover{ background:rgba(0,27,92,.12); }
+  .oi-panel .david-voice-toggle{ margin:0; width:32px; height:32px; padding:0; flex:none; justify-content:center; border-radius:50%; }
 
   .oi-screen{ background:linear-gradient(180deg, #fff 0%, var(--tint-white) 100%); padding:36px 28px; }
   .oi-screen.oi-center{ justify-content:center; }
@@ -964,12 +985,12 @@
   .oi-consultant img{ width:36px; height:36px; border-radius:50%; object-fit:cover; flex:none; }
   .oi-consultant strong{ display:block; font-family:'Manrope',sans-serif; font-size:14px; color:var(--navy); line-height:1.2; }
   .oi-consultant span{ font-size:12px; color:var(--grey); }
+  .oi-card-title{ font-size:21px; color:var(--navy); margin-bottom:6px; }
+  .oi-card-sub{ color:var(--grey); font-size:14px; margin-bottom:18px; }
   .oi-org-hero{ position:relative; border-radius:16px; padding:24px 20px 20px; margin-bottom:18px; text-align:center; background-color:#001B5C; background-size:cover; background-position:center; }
   .oi-org-hero-photo{ display:block; width:76px; height:76px; border-radius:50%; object-fit:cover; margin:0 auto 10px; border:3px solid rgba(255,255,255,.85); box-shadow:0 10px 22px rgba(0,27,92,.35); }
   .oi-org-hero-name strong{ display:block; color:#fff; font-family:'Manrope',sans-serif; font-size:15px; }
   .oi-org-hero-name span{ display:block; color:rgba(255,255,255,.8); font-size:12px; margin-top:2px; }
-  .oi-card-title{ font-size:21px; color:var(--navy); margin-bottom:6px; }
-  .oi-card-sub{ color:var(--grey); font-size:14px; margin-bottom:18px; }
 
   /* 1 · Meet */
   .oi-meet-card{ position:relative; overflow:hidden; max-width:440px; width:100%; margin:0 auto; text-align:center; color:#fff; padding:34px 30px 30px; border-radius:22px; background:linear-gradient(160deg, var(--navy) 0%, var(--blue) 65%, var(--midblue) 100%); box-shadow:0 26px 60px rgba(0,27,92,.3); }
@@ -1059,7 +1080,7 @@
   .oi-prompts button:hover{ border-color:var(--blue); background:var(--tint-blue); }
   .oi-chat-log{ flex:1; min-height:60px; overflow-y:auto; display:flex; flex-direction:column; gap:10px; padding:6px 2px 10px; }
   .oi-chat-log .david-msg{ font-size:13.5px; }
-  .oi-chat-next{ text-align:center; padding:2px 0 8px; flex:none; }
+  .oi-chat-next{ text-align:center; padding:12px 0 6px; flex:none; border-top:1px solid var(--line); }
   .oi-voice{ position:relative; display:flex; align-items:center; justify-content:center; gap:14px; padding:6px 0 18px; flex:none; }
   .oi-wave{ display:flex; align-items:center; gap:3px; height:26px; }
   .oi-wave i{ width:3px; height:6px; border-radius:2px; background:#A9C4F5; transition:height .2s ease; }
@@ -1080,6 +1101,21 @@
   .oi-ask button{ width:38px; height:38px; border-radius:9px; border:none; background:var(--navy); color:#fff; display:flex; align-items:center; justify-content:center; cursor:pointer; flex:none; }
   .oi-ask button:hover{ background:var(--blue); }
   @media (max-width:760px){ .oi-shell-side{ display:none; } .oi-david-brand{ display:none; } }
+  .oi-panel:not(.oi-step5) .oi-shell-side, .oi-panel:not(.oi-step5) .oi-david-brand{ display:none; }
+  /* The popup is always ~560px wide, so use the narrow layouts inside it even on large screens (mirrors the max-width:640/560 rules). */
+  .oi-panel .oi-industry-grid{ grid-template-columns:repeat(2,1fr); } .oi-panel .oi-industry-photo{ height:90px; }
+  .oi-panel .oi-imagine-body{ flex-direction:column; align-items:center; text-align:center; }
+  .oi-panel .oi-offer-grid, .oi-panel .oi-opt-grid{ grid-template-columns:1fr; }
+  .oi-panel .oi-row{ grid-template-columns:1fr; gap:6px; }
+  .oi-panel .oi-opt-grid-photo{ grid-template-columns:repeat(2,1fr); }
+  .oi-panel .oi-opt-grid-icons{ grid-template-columns:repeat(3,1fr); }
+  .oi-panel .oi-brief{ grid-template-columns:1fr; } .oi-panel .oi-brief-photo{ min-height:140px; } .oi-panel .oi-brief-grid{ grid-template-columns:1fr 1fr; } .oi-panel .oi-brief-actions-row{ grid-template-columns:1fr; }
+  .oi-panel:not(.oi-step5) .oi-david-card img{ width:48px; height:48px; }
+  .oi-panel .oi-feature-rows, .oi-panel .oi-infinity-banner{ max-width:none; }
+  .oi-panel .oi-found-card{ grid-template-columns:1fr; } .oi-panel .oi-found-info{ border-right:none; padding-right:0; border-bottom:1px solid var(--line); padding-bottom:12px; } .oi-panel .oi-found-photo-col{ flex-direction:row; } .oi-panel .oi-found-photo{ width:64px; }
+  .oi-panel .oi-sevenday-grid, .oi-panel .oi-stat-grid{ grid-template-columns:repeat(2,1fr); }
+  .oi-panel .oi-value-grid, .oi-panel .oi-outcome-grid{ grid-template-columns:1fr; }
+  .oi-panel .oi-timeline-row{ grid-template-columns:1fr; gap:2px; }
 
   /* 6 · Imagine if */
   .oi-imagine{ position:relative; max-width:620px; width:100%; margin:0 auto; background:#fff; border:1px solid var(--line); border-radius:18px; padding:24px 28px 70px; overflow:hidden; box-shadow:0 18px 44px rgba(0,27,92,.08); }
@@ -1174,6 +1210,7 @@
   .oi-brief-card-icon{ display:flex; align-items:center; justify-content:center; width:28px; height:28px; border-radius:8px; color:#fff; margin-bottom:4px; }
   .oi-brief-card strong{ font-size:12px; color:var(--navy); line-height:1.3; }
   .oi-brief-card span{ font-size:10.5px; color:var(--grey); line-height:1.4; }
+  .oi-brief-card .oi-brief-card-icon{ color:#fff; }
   .oi-brief-actions-row{ display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; margin-bottom:12px; }
   @media (max-width:640px){ .oi-brief{ grid-template-columns:1fr; } .oi-brief-photo{ min-height:140px; } .oi-brief-grid{ grid-template-columns:1fr 1fr; } .oi-brief-actions-row{ grid-template-columns:1fr; } }
 
@@ -1309,3 +1346,330 @@
   .oi-panel .oi-btn:hover:not(:disabled), .oi-panel .oi-ask button:hover, .oi-panel .oi-meet-row button:hover,
   .oi-panel .david-continue-btn:hover, .oi-panel .oi-mic:hover{ background:var(--oi-btn-grad-hover); }
   .oi-panel .oi-meet-row button{ border-color:rgba(255,255,255,.55); }
+
+  /* 6 · Imagine — fit the whole step in the popup without scrolling: the popup is the card, photo sits beside the text, feature rows stacked on the left of the photo. */
+  .oi-panel .oi-screen[data-screen="moment"]{ padding:20px 24px; }
+  .oi-panel .oi-imagine{ max-width:none; padding:0; border:none; border-radius:0; box-shadow:none; background:none; overflow:visible; }
+  .oi-panel .oi-imagine .oi-head{ margin-bottom:10px !important; }
+  .oi-panel .oi-imagine .oi-head h3{ font-size:19px; margin-bottom:2px; }
+  .oi-panel .oi-imagine .oi-head p{ font-size:12.5px; }
+  .oi-panel .oi-imagine-body{ flex-direction:row; align-items:flex-start; text-align:left; gap:12px; min-height:112px; }
+  .oi-panel .oi-imagine-photo{ width:44px; height:44px; box-shadow:0 0 0 3px var(--tint-blue); }
+  .oi-panel .oi-imagine .oi-line{ font-size:12.5px; line-height:1.45; margin-bottom:6px; }
+  .oi-panel .oi-imagine .oi-line.accent{ font-size:14.5px; margin-bottom:0; }
+  .oi-panel .oi-imagine .oi-feature-photo{ margin:12px 0 14px; padding:14px; }
+  .oi-panel .oi-imagine .oi-feature-rows{ max-width:340px; gap:8px; margin-bottom:10px; }
+  .oi-panel .oi-imagine .oi-feature-row{ padding:9px 14px; }
+  .oi-panel .oi-imagine .oi-feature-row span:last-child{ display:block; }
+  .oi-panel .oi-imagine .oi-infinity-banner{ max-width:340px; padding:12px 14px; }
+  .oi-panel .oi-imagine .oi-infinity-banner p{ font-size:12.5px; }
+  .oi-panel .oi-imagine-actions .oi-btn{ width:100%; }
+  @media (max-width:440px){ .oi-panel .oi-imagine .oi-feature-rows, .oi-panel .oi-imagine .oi-infinity-banner{ max-width:none; } }
+
+  /* 7 · Would you like me to come and work with you? (+ 7b invite) — fit without scrolling; the popup is the card. */
+  .oi-panel .oi-screen[data-screen="offer"], .oi-panel .oi-screen[data-screen="arrange"]{ padding:20px 24px; }
+  .oi-panel [data-screen="offer"] .oi-card, .oi-panel [data-screen="arrange"] .oi-card{ max-width:none; padding:0; border:none; border-radius:0; box-shadow:none; background:none; }
+  .oi-panel [data-screen="offer"] .oi-card-title, .oi-panel [data-screen="arrange"] .oi-card-title{ font-size:19px; line-height:1.3; margin-bottom:4px; }
+  .oi-panel [data-screen="offer"] .oi-card-sub, .oi-panel [data-screen="arrange"] .oi-card-sub{ font-size:13px; margin-bottom:12px; }
+  .oi-offer-intro{ font-size:14px; color:#31394A; line-height:1.6; margin-bottom:20px; }
+  .oi-panel .oi-offer-intro{ font-size:12.5px; line-height:1.5; margin-bottom:12px; }
+  .oi-panel [data-screen="offer"] .oi-howitworks{ margin-bottom:0; background:var(--tint-white); border:1px solid var(--line); border-radius:12px; padding:10px 14px 4px; }
+  .oi-panel [data-screen="offer"] .oi-howitworks-title{ font-size:12px; margin-bottom:2px; }
+  .oi-panel [data-screen="offer"] .oi-step-row{ align-items:center; gap:10px; padding:7px 0; }
+  .oi-panel [data-screen="offer"] .oi-step-row .oi-feature-icon{ width:28px; height:28px; border-radius:8px; }
+  .oi-panel [data-screen="offer"] .oi-step-row strong{ font-size:12.5px; }
+  .oi-panel [data-screen="offer"] .oi-step-row > div > span{ display:block; font-size:11.5px; line-height:1.35; margin-top:1px; }
+  .oi-panel [data-screen="offer"] .oi-step-num{ width:20px; height:20px; font-size:10px; }
+  .oi-offer-links{ display:flex; justify-content:center; flex-wrap:wrap; gap:4px 18px; margin-top:8px; }
+  .oi-offer-links .oi-link-btn{ margin:0; font-size:12.5px; }
+
+  /* 8 · Find your organisation — fit each stage without scrolling; the popup is the card. */
+  .oi-panel .oi-screen[data-screen="company"]{ padding:20px 24px; }
+  .oi-panel [data-screen="company"] .oi-card{ max-width:none; padding:0; border:none; border-radius:0; box-shadow:none; background:none; }
+  .oi-panel [data-screen="company"] .oi-card-title{ font-size:19px; margin-bottom:4px; }
+  .oi-panel [data-screen="company"] .oi-card-sub{ font-size:12.5px; line-height:1.5; margin-bottom:14px; }
+  .oi-panel [data-screen="company"] .oi-form-grid{ display:grid; grid-template-columns:1fr 1fr; gap:10px 12px; }
+  .oi-panel [data-screen="company"] .oi-row{ gap:4px; }
+  .oi-panel [data-screen="company"] .oi-row > span{ font-size:12px; }
+  .oi-panel [data-screen="company"] .oi-form input[type="text"], .oi-panel [data-screen="company"] .oi-form select{ padding:9px 12px; font-size:13px; }
+  .oi-panel [data-screen="company"] .oi-check, .oi-panel [data-screen="company"] .oi-form-grid > .oi-btn{ grid-column:1 / -1; }
+  .oi-panel [data-screen="company"] .oi-check{ margin:2px 0; font-size:13px; }
+  .oi-panel [data-screen="company"] .oi-found-card{ grid-template-columns:72px 1fr; gap:6px 14px; padding:12px; }
+  .oi-panel [data-screen="company"] .oi-found-photo-col{ flex-direction:column; }
+  .oi-panel [data-screen="company"] .oi-found-photo{ width:72px; height:56px; }
+  .oi-panel [data-screen="company"] .oi-found-info{ border-bottom:none; padding-bottom:0; }
+  .oi-panel [data-screen="company"] .oi-found-desc{ margin-top:4px; }
+  .oi-panel [data-screen="company"] .oi-found-also-col{ grid-column:1 / -1; display:flex; align-items:center; gap:10px; border-top:1px solid var(--line); padding-top:10px; }
+  .oi-panel [data-screen="company"] .oi-found-also{ margin:0; flex:none; }
+  .oi-panel [data-screen="company"] .oi-found-tags{ flex-direction:row; flex-wrap:nowrap; gap:5px; min-width:0; }
+  .oi-panel [data-screen="company"] .oi-chip-sm{ padding:4px 7px; gap:4px; font-size:10.5px; }
+  .oi-panel [data-screen="company"] .oi-chip-sm svg{ width:12px; height:12px; }
+  .oi-panel [data-screen="company"] .oi-found-card + .oi-form-grid{ grid-template-columns:repeat(3,1fr); margin-top:12px !important; }
+  .oi-panel [data-screen="company"] .oi-found-q{ margin:12px 0 8px; font-size:13.5px; }
+  @media (max-width:440px){ .oi-panel [data-screen="company"] .oi-form-grid, .oi-panel [data-screen="company"] .oi-found-card + .oi-form-grid{ grid-template-columns:1fr; } }
+
+  /* 9 · Quick questions — fit every question without scrolling; same content, tighter layout; the popup is the card. */
+  .oi-panel .oi-screen[data-screen="discovery"]{ padding:18px 24px; }
+  .oi-panel [data-screen="discovery"] .oi-card{ max-width:none; padding:0; border:none; border-radius:0; box-shadow:none; background:none; }
+  .oi-panel [data-screen="discovery"] .oi-q-intro{ font-size:13px; margin-bottom:10px; }
+  .oi-panel [data-screen="discovery"] .oi-q-row{ gap:12px; margin-bottom:12px; }
+  .oi-panel [data-screen="discovery"] .oi-q-avatar{ width:64px; }
+  .oi-panel [data-screen="discovery"] .oi-q-avatar img{ width:42px; height:42px; }
+  .oi-panel [data-screen="discovery"] .oi-q-bubble{ padding:10px 14px; }
+  .oi-panel [data-screen="discovery"] .oi-q-bubble .oi-q-count{ font-size:10.5px; margin-bottom:3px; }
+  .oi-panel [data-screen="discovery"] .oi-q-bubble .oi-q-text{ font-size:15.5px; margin-bottom:3px; }
+  .oi-panel [data-screen="discovery"] .oi-q-bubble .oi-q-hint{ font-size:12px; }
+  .oi-panel [data-screen="discovery"] .oi-opt-grid{ grid-template-columns:1fr 1fr; gap:8px; margin-bottom:10px; }
+  .oi-panel [data-screen="discovery"] .oi-opt{ padding:9px 11px; gap:9px; font-size:12.5px; }
+  .oi-panel [data-screen="discovery"] .oi-opt-grid-photo{ grid-template-columns:repeat(3,1fr); }
+  .oi-panel [data-screen="discovery"] .oi-opt-photo-btn{ padding:8px; gap:6px; }
+  .oi-panel [data-screen="discovery"] .oi-opt-photo{ height:52px; }
+  .oi-panel [data-screen="discovery"] .oi-opt-grid-icons{ grid-template-columns:repeat(5,1fr); gap:8px; margin-bottom:8px; }
+  .oi-panel [data-screen="discovery"] .oi-opt-icon-btn{ padding:8px 4px; gap:5px; font-size:11px; }
+  .oi-panel [data-screen="discovery"] .oi-opt-logo{ width:32px; height:32px; }
+  .oi-panel [data-screen="discovery"] .oi-opt-grid-icons + .oi-opt-grid .oi-opt.wide{ grid-column:auto; }
+  .oi-panel [data-screen="discovery"] .oi-other-input{ padding:9px 12px; font-size:13px; margin-bottom:10px; }
+  .oi-panel [data-screen="discovery"] .oi-textarea{ min-height:84px; }
+  @media (max-width:440px){
+    .oi-panel [data-screen="discovery"] .oi-opt-grid{ grid-template-columns:1fr; }
+    .oi-panel [data-screen="discovery"] .oi-opt-grid-photo{ grid-template-columns:repeat(2,1fr); }
+    .oi-panel [data-screen="discovery"] .oi-opt-grid-icons{ grid-template-columns:repeat(3,1fr); }
+  }
+
+  /* 10 · Operational Intelligence Brief — fit without scrolling; same content: text beside photo, cards 4 per row, actions side by side. */
+  .oi-panel .oi-screen[data-screen="report"]{ padding:16px 24px 18px; }
+  .oi-panel [data-screen="report"] .oi-brief-head{ margin-bottom:10px; }
+  .oi-panel [data-screen="report"] .david-eyebrow{ text-align:left; margin-bottom:2px; font-size:11.5px; }
+  .oi-panel [data-screen="report"] .oi-brief-head-sub{ font-size:12px; margin-top:0; }
+  .oi-panel [data-screen="report"] .oi-edit-details{ margin:0; padding:2px 0; font-size:12.5px; }
+  .oi-panel [data-screen="report"] .oi-brief{ grid-template-columns:1.25fr 1fr; margin-bottom:10px; }
+  .oi-panel [data-screen="report"] .oi-brief-text{ padding:12px 14px; }
+  .oi-panel [data-screen="report"] .oi-brief-text .oi-consultant{ padding-bottom:8px; margin-bottom:8px; gap:8px; }
+  .oi-panel [data-screen="report"] .oi-brief-text .oi-consultant img{ width:30px; height:30px; }
+  .oi-panel [data-screen="report"] .oi-brief-text .oi-consultant strong{ font-size:12.5px; }
+  .oi-panel [data-screen="report"] .oi-brief-text .oi-consultant span{ font-size:11px; }
+  .oi-panel [data-screen="report"] .oi-brief-text p{ font-size:11.5px; line-height:1.45; margin-bottom:6px; }
+  .oi-panel [data-screen="report"] .oi-brief-text p:last-child{ margin-bottom:0; }
+  .oi-panel [data-screen="report"] .oi-brief-photo{ min-height:0; }
+  .oi-panel [data-screen="report"] .oi-brief-photo span{ font-size:13px; bottom:30px; left:12px; right:12px; }
+  .oi-panel [data-screen="report"] .oi-brief-photo em{ font-size:10.5px; bottom:12px; left:12px; right:12px; }
+  .oi-panel [data-screen="report"] .oi-brief-grid{ grid-template-columns:repeat(4,1fr); gap:6px; margin-bottom:4px; }
+  .oi-panel [data-screen="report"] .oi-brief-card{ padding:8px; gap:2px; border-radius:10px; }
+  .oi-panel [data-screen="report"] .oi-brief-card-icon{ width:26px; height:26px; border-radius:7px; margin-bottom:2px; }
+  .oi-panel [data-screen="report"] .oi-brief-card strong{ font-size:11px; line-height:1.25; }
+  .oi-panel [data-screen="report"] .oi-brief-card span{ font-size:10px; line-height:1.35; }
+  .oi-panel [data-screen="report"] .oi-brief-grid + .oi-link-btn{ margin:6px auto 8px !important; padding:4px 10px; font-size:12.5px; }
+  .oi-panel [data-screen="report"] .oi-brief-actions-row{ grid-template-columns:1fr 1fr; gap:8px; margin-bottom:8px; }
+  .oi-panel [data-screen="report"] .oi-brief-actions-row .oi-btn{ padding:10px 14px; font-size:13px; }
+  .oi-panel [data-screen="report"] .oi-brief-actions-row + .oi-btn{ padding:12px 18px; }
+  @media (max-width:440px){
+    .oi-panel [data-screen="report"] .oi-brief{ grid-template-columns:1fr; } .oi-panel [data-screen="report"] .oi-brief-photo{ min-height:110px; }
+    .oi-panel [data-screen="report"] .oi-brief-grid{ grid-template-columns:1fr 1fr; }
+  }
+  .oi-7d-intro{ font-size:14px; color:#31394A; line-height:1.6; margin-bottom:14px; }
+  .oi-7d-note{ font-size:13.5px; color:var(--grey); margin:12px 0 18px; }
+
+  /* 11 · Your 7-Day OI Experience — fit without scrolling; same content: 5 items in one row, to-dos in two columns; the popup is the card. */
+  .oi-panel .oi-screen[data-screen="7day-start"]{ padding:16px 24px 18px; }
+  .oi-panel [data-screen="7day-start"] .oi-card{ max-width:none; padding:0; border:none; border-radius:0; box-shadow:none; background:none; }
+  .oi-panel [data-screen="7day-start"] .oi-consultant{ padding-bottom:8px; margin-bottom:10px; gap:8px; }
+  .oi-panel [data-screen="7day-start"] .oi-consultant img{ width:30px; height:30px; }
+  .oi-panel [data-screen="7day-start"] .oi-consultant strong{ font-size:12.5px; }
+  .oi-panel [data-screen="7day-start"] .oi-consultant span{ font-size:11px; }
+  .oi-panel [data-screen="7day-start"] .oi-card-title{ font-size:19px; margin-bottom:2px; }
+  .oi-panel .oi-7d-intro{ font-size:12.5px; line-height:1.45; margin-bottom:8px; }
+  .oi-panel [data-screen="7day-start"] .oi-day-badge{ flex-direction:row; justify-content:center; flex-wrap:wrap; gap:4px 10px; padding:7px 12px; }
+  .oi-panel [data-screen="7day-start"] .oi-day-badge strong{ font-size:12.5px; }
+  .oi-panel [data-screen="7day-start"] .oi-day-badge span{ font-size:11.5px; }
+  .oi-panel .oi-7d-note{ font-size:12px; margin:6px 0 10px; text-align:center; }
+  .oi-panel [data-screen="7day-start"] .oi-howitworks{ margin-bottom:10px; }
+  .oi-panel [data-screen="7day-start"] .oi-howitworks-title{ font-size:12px; margin-bottom:6px; }
+  .oi-panel [data-screen="7day-start"] .oi-sevenday-grid{ grid-template-columns:repeat(5,1fr); gap:6px; }
+  .oi-panel [data-screen="7day-start"] .oi-sevenday-item{ padding:8px 5px; gap:3px; }
+  .oi-panel [data-screen="7day-start"] .oi-sevenday-item .oi-feature-icon{ width:28px; height:28px; border-radius:8px; }
+  .oi-panel [data-screen="7day-start"] .oi-sevenday-item strong{ font-size:11.5px; }
+  .oi-panel [data-screen="7day-start"] .oi-sevenday-item span:last-child{ font-size:9.5px; line-height:1.3; }
+  .oi-panel [data-screen="7day-start"] .oi-check-list{ display:grid; grid-template-columns:1fr 1fr; gap:6px 14px; margin-bottom:12px; }
+  .oi-panel [data-screen="7day-start"] .oi-check-list li{ font-size:11.5px; line-height:1.35; gap:7px; }
+  .oi-panel [data-screen="7day-start"] .oi-check-dot{ width:16px; height:16px; }
+  @media (max-width:440px){
+    .oi-panel [data-screen="7day-start"] .oi-sevenday-grid{ grid-template-columns:repeat(2,1fr); }
+    .oi-panel [data-screen="7day-start"] .oi-check-list{ grid-template-columns:1fr; }
+  }
+  .oi-wh-intro{ font-size:14px; color:#31394A; line-height:1.6; }
+  .oi-wh-lead{ font-size:14px; font-weight:600; color:var(--navy); margin-bottom:10px; }
+  .oi-wh-actions{ display:flex; gap:10px; flex-wrap:wrap; margin-top:16px; }
+  .oi-wh-actions .oi-btn-blue{ flex:1; }
+
+  /* 12 · What happened during your 7-day Experience — fit without scrolling; same content: stats 3 per row, actions compact; the popup is the card. */
+  .oi-panel .oi-screen[data-screen="what-happened"]{ padding:16px 24px 18px; }
+  .oi-panel [data-screen="what-happened"] .oi-card{ max-width:none; padding:0; border:none; border-radius:0; box-shadow:none; background:none; }
+  .oi-panel [data-screen="what-happened"] .oi-consultant{ padding-bottom:8px; margin-bottom:10px; gap:8px; }
+  .oi-panel [data-screen="what-happened"] .oi-consultant img{ width:30px; height:30px; }
+  .oi-panel [data-screen="what-happened"] .oi-consultant strong{ font-size:12.5px; }
+  .oi-panel [data-screen="what-happened"] .oi-consultant span{ font-size:11px; }
+  .oi-panel [data-screen="what-happened"] .oi-card-title{ font-size:19px; margin-bottom:4px; }
+  .oi-panel .oi-wh-intro{ font-size:12.5px; line-height:1.45; margin-bottom:4px; }
+  .oi-panel .oi-wh-lead{ font-size:12.5px; margin-bottom:8px; }
+  .oi-panel [data-screen="what-happened"] .oi-stat-toolbar{ font-size:11.5px; margin-bottom:8px; }
+  .oi-panel [data-screen="what-happened"] .oi-stat-grid{ grid-template-columns:repeat(3,1fr); gap:8px; margin-bottom:0; }
+  .oi-panel [data-screen="what-happened"] .oi-stat-tile{ display:grid; grid-template-columns:auto 1fr; align-items:center; gap:2px 8px; padding:10px; }
+  .oi-panel [data-screen="what-happened"] .oi-stat-tile .oi-feature-icon{ width:30px; height:30px; border-radius:8px; }
+  .oi-panel [data-screen="what-happened"] .oi-stat-tile strong{ font-size:20px; line-height:1; }
+  .oi-panel [data-screen="what-happened"] .oi-stat-label, .oi-panel [data-screen="what-happened"] .oi-stat-text{ grid-column:1 / -1; }
+  .oi-panel [data-screen="what-happened"] .oi-stat-label{ font-size:11.5px; margin-top:4px; }
+  .oi-panel [data-screen="what-happened"] .oi-stat-text{ font-size:10.5px; }
+  .oi-panel .oi-wh-actions{ display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:12px; }
+  .oi-panel .oi-wh-actions .oi-btn{ padding:10px 14px; font-size:13px; }
+  .oi-panel .oi-wh-actions .oi-btn-blue{ grid-column:1 / -1; padding:12px 18px; font-size:14px; }
+  @media (max-width:440px){ .oi-panel [data-screen="what-happened"] .oi-stat-grid{ grid-template-columns:repeat(2,1fr); } }
+
+  .oi-vr-intro{ font-size:14px; color:#31394A; line-height:1.6; margin-bottom:14px; }
+  .oi-wf-list{ display:flex; flex-direction:column; gap:10px; margin-bottom:16px; }
+  .oi-price-intro{ font-size:13px; color:var(--grey); margin:-8px 0 14px; text-align:center; }
+  .oi-price-currency{ display:flex; justify-content:center; align-items:center; gap:8px; margin-bottom:16px; }
+  .oi-price-currency label{ font-size:12px; color:var(--grey); font-weight:600; text-transform:uppercase; letter-spacing:.03em; }
+  .oi-price-list{ margin-bottom:10px; }
+  .oi-price-add{ margin-bottom:16px; }
+  .oi-employ-btn{ flex:1; font-size:16px; padding:16px 24px; }
+  .oi-price-note{ font-size:12px; color:var(--grey); text-align:center; margin-top:14px; line-height:1.7; }
+
+  /* 13–16 · fit each step without scrolling; same content, tighter layout; the popup is the card. */
+  .oi-panel .oi-screen[data-screen="value-report"], .oi-panel .oi-screen[data-screen="build-workforce"], .oi-panel .oi-screen[data-screen="pricing"], .oi-panel .oi-screen[data-screen="welcome"]{ padding:16px 24px 18px; }
+  .oi-panel [data-screen="value-report"] .oi-card, .oi-panel [data-screen="welcome"] .oi-card{ max-width:none; padding:0; border:none; border-radius:0; box-shadow:none; background:none; }
+  .oi-panel [data-screen="value-report"] .oi-consultant, .oi-panel [data-screen="welcome"] .oi-consultant{ padding-bottom:8px; margin-bottom:10px; gap:8px; }
+  .oi-panel [data-screen="value-report"] .oi-consultant img, .oi-panel [data-screen="welcome"] .oi-consultant img{ width:30px; height:30px; }
+  .oi-panel [data-screen="value-report"] .oi-consultant strong, .oi-panel [data-screen="welcome"] .oi-consultant strong{ font-size:12.5px; }
+  .oi-panel [data-screen="value-report"] .oi-consultant span, .oi-panel [data-screen="welcome"] .oi-consultant span{ font-size:11px; }
+  .oi-panel [data-screen="value-report"] .oi-card-title, .oi-panel [data-screen="welcome"] .oi-card-title{ font-size:19px; margin-bottom:2px; }
+  .oi-panel [data-screen="value-report"] .oi-howitworks, .oi-panel [data-screen="welcome"] .oi-howitworks{ margin-bottom:10px; }
+  .oi-panel [data-screen="value-report"] .oi-howitworks-title, .oi-panel [data-screen="welcome"] .oi-howitworks-title{ font-size:12px; margin-bottom:6px; }
+
+  /* 13 · Value report */
+  .oi-panel .oi-vr-intro{ font-size:12.5px; line-height:1.45; margin-bottom:8px; }
+  .oi-panel [data-screen="value-report"] .oi-badge-row{ margin-bottom:10px; gap:6px; }
+  .oi-panel [data-screen="value-report"] .oi-badge{ padding:4px 10px; font-size:10.5px; }
+  .oi-panel [data-screen="value-report"] .oi-value-grid{ grid-template-columns:repeat(3,1fr); gap:8px; }
+  .oi-panel [data-screen="value-report"] .oi-value-card{ padding:10px 6px; }
+  .oi-panel [data-screen="value-report"] .oi-value-card strong{ font-size:16px; margin-bottom:2px; }
+  .oi-panel [data-screen="value-report"] .oi-value-card span{ font-size:11px; }
+  .oi-panel [data-screen="value-report"] .oi-value-card em{ font-size:10px; margin-top:1px; }
+  .oi-panel [data-screen="value-report"] .oi-outcome-grid{ grid-template-columns:1fr 1fr; gap:8px 14px; }
+  .oi-panel [data-screen="value-report"] .oi-outcome-item strong{ font-size:12px; }
+  .oi-panel [data-screen="value-report"] .oi-outcome-item span{ font-size:11px; }
+  .oi-panel [data-screen="value-report"] .oi-wh-actions{ margin-top:4px; }
+
+  /* 14 · Recommended workforce */
+  .oi-panel [data-screen="build-workforce"] .david-eyebrow{ margin-bottom:4px; font-size:11.5px; }
+  .oi-panel [data-screen="build-workforce"] .david-wizard-q{ font-size:15px; line-height:1.4; margin-bottom:12px; }
+  .oi-panel .oi-wf-list{ gap:8px; margin-bottom:12px; }
+  .oi-panel [data-screen="build-workforce"] .david-workforce-card{ padding:10px 12px; gap:10px; }
+  .oi-panel [data-screen="build-workforce"] .david-workforce-card .wf-avatar{ width:34px; height:34px; }
+  .oi-panel [data-screen="build-workforce"] .wf-text .wf-role{ font-size:10.5px; margin-bottom:2px; }
+  .oi-panel [data-screen="build-workforce"] .wf-text strong{ font-size:13px; }
+  .oi-panel [data-screen="build-workforce"] .wf-text p{ font-size:11.5px; line-height:1.4; margin:0 0 5px; }
+  .oi-panel [data-screen="build-workforce"] .wf-value{ font-size:11px; padding:5px 8px; }
+
+  /* 15 · Investment — each role on one line: avatar · swap dropdown (shows role + name) · price figures · remove (x). */
+  .oi-panel [data-screen="pricing"] .david-eyebrow{ margin-bottom:2px; font-size:11.5px; }
+  .oi-panel [data-screen="pricing"] .david-wizard-q{ font-size:16px; margin-bottom:10px; }
+  .oi-panel .oi-price-intro{ font-size:12px; margin:-6px 0 8px; }
+  .oi-panel .oi-price-currency{ margin-bottom:10px; }
+  .oi-panel .oi-price-currency label{ font-size:11px; }
+  .oi-panel [data-screen="pricing"] .oi-select-sm{ padding:4px 8px; font-size:12px; }
+  .oi-panel .oi-price-list{ margin-bottom:8px; }
+  .oi-panel [data-screen="pricing"] .david-price-row{ position:relative; display:grid; grid-template-columns:auto minmax(0,1fr) auto; align-items:center; gap:10px; padding:8px 30px 8px 10px; margin-bottom:6px; }
+  .oi-panel [data-screen="pricing"] .david-price-row-top{ display:contents; }
+  .oi-panel [data-screen="pricing"] .david-price-row-top > div{ grid-column:1; grid-row:1; }
+  .oi-panel [data-screen="pricing"] .david-price-row-title{ display:none; }
+  .oi-panel [data-screen="pricing"] .david-price-row-remove{ position:absolute; top:50%; right:8px; transform:translateY(-50%); font-size:16px; }
+  .oi-panel [data-screen="pricing"] .david-price-avatar{ width:30px; height:30px; }
+  .oi-panel [data-screen="pricing"] .david-price-row select{ grid-column:2; grid-row:1; margin:0; padding:6px 8px; font-size:12px; font-weight:600; text-overflow:ellipsis; }
+  .oi-panel [data-screen="pricing"] .david-price-figures{ grid-column:3; grid-row:1; gap:8px; flex-wrap:nowrap; }
+  .oi-panel [data-screen="pricing"] .david-price-figures .fig{ font-size:9px; line-height:1.2; white-space:nowrap; }
+  .oi-panel [data-screen="pricing"] .david-price-figures .fig.oi strong{ font-size:14px; }
+  .oi-panel [data-screen="pricing"] .david-price-figures .fig.human strong{ font-size:10.5px; }
+  .oi-panel [data-screen="pricing"] .david-price-figures .fig.save strong{ font-size:11.5px; }
+  .oi-panel .oi-price-add{ margin-bottom:10px; padding:8px 14px; font-size:13px; }
+  .oi-panel [data-screen="pricing"] .oi-invest-summary{ margin-bottom:8px; }
+  .oi-panel [data-screen="pricing"] .oi-invest-row{ padding:6px 12px; }
+  .oi-panel [data-screen="pricing"] .oi-invest-total strong{ font-size:14px; }
+  .oi-panel [data-screen="pricing"] .cr-summary-box{ padding:8px 12px; font-size:12px; line-height:1.45; margin-bottom:10px; }
+  .oi-panel .oi-employ-btn{ font-size:14.5px; padding:12px 20px; }
+  .oi-panel .oi-price-note{ font-size:11px; margin-top:0; line-height:1.45; }
+
+  /* 16 · Welcome */
+  .oi-panel [data-screen="welcome"] .oi-card-sub{ font-size:12.5px; margin-bottom:8px; }
+  .oi-panel [data-screen="welcome"] .oi-check-list{ display:grid; grid-template-columns:1fr 1fr; gap:6px 14px; margin-bottom:10px; }
+  .oi-panel [data-screen="welcome"] .oi-check-list li{ font-size:12px; line-height:1.35; gap:7px; }
+  .oi-panel [data-screen="welcome"] .oi-check-dot{ width:16px; height:16px; }
+  .oi-panel [data-screen="welcome"] .oi-timeline-row{ grid-template-columns:110px 1fr; gap:10px; padding:6px 0; }
+  .oi-panel [data-screen="welcome"] .oi-timeline-when{ font-size:11px; }
+  .oi-panel [data-screen="welcome"] .oi-timeline-text{ font-size:12px; }
+  .oi-panel [data-screen="welcome"] .oi-link-btn{ margin-top:4px; }
+
+  @media (max-width:440px){
+    .oi-panel [data-screen="value-report"] .oi-outcome-grid, .oi-panel [data-screen="welcome"] .oi-check-list{ grid-template-columns:1fr; }
+    .oi-panel [data-screen="welcome"] .oi-timeline-row{ grid-template-columns:1fr; gap:2px; }
+    .oi-panel [data-screen="pricing"] .david-price-row{ grid-template-columns:auto minmax(0,1fr); } .oi-panel [data-screen="pricing"] .david-price-figures{ grid-column:1 / -1; grid-row:2; }
+  }
+
+  /* 2 · Play with — fit without scrolling: 3 industry cards per row with shorter photos (same cards, photos and labels). */
+  .oi-panel .oi-screen[data-screen="industry"]{ padding:18px 24px; }
+  .oi-panel [data-screen="industry"] .oi-head{ margin-bottom:14px; }
+  .oi-panel [data-screen="industry"] .oi-head h3{ font-size:21px; margin-bottom:2px; }
+  .oi-panel [data-screen="industry"] .oi-head p{ font-size:13.5px; }
+  .oi-panel [data-screen="industry"] .oi-industry-grid{ grid-template-columns:repeat(3,1fr); gap:10px; }
+  .oi-panel [data-screen="industry"] .oi-industry-tile{ display:flex; flex-direction:column; justify-content:flex-start; }
+  .oi-panel [data-screen="industry"] .oi-industry-photo{ height:80px; flex:none; }
+  .oi-panel [data-screen="industry"] .oi-industry-label{ gap:7px; padding:9px 10px; font-size:12.5px; }
+  .oi-panel [data-screen="industry"] .oi-chip-grid{ margin-top:12px; gap:6px; }
+  .oi-panel [data-screen="industry"] .oi-chip{ padding:6px 11px; font-size:12px; }
+  .oi-panel [data-screen="industry"] .oi-link-btn{ margin-top:10px; }
+  @media (max-width:440px){ .oi-panel [data-screen="industry"] .oi-industry-grid{ grid-template-columns:repeat(2,1fr); } }
+
+  /* 10 · extra room for short windows: icon beside the title in each brief card. */
+  .oi-panel [data-screen="report"] .oi-brief-card{ display:grid; grid-template-columns:auto 1fr; align-items:center; column-gap:6px; row-gap:3px; }
+  .oi-panel [data-screen="report"] .oi-brief-card-icon{ width:22px; height:22px; margin:0; }
+  .oi-panel [data-screen="report"] .oi-brief-card > span:last-child{ grid-column:1 / -1; }
+  .oi-panel [data-screen="report"] .oi-brief-text{ padding:10px 12px; }
+  .oi-panel [data-screen="report"] .oi-brief-text .oi-consultant{ padding-bottom:6px; margin-bottom:6px; }
+
+  /* 14 · consultant cards two per row. */
+  .oi-panel .oi-wf-list{ display:grid; grid-template-columns:1fr 1fr; }
+  .oi-panel [data-screen="build-workforce"] .david-workforce-card{ flex-direction:column; gap:6px; }
+  @media (max-width:440px){ .oi-panel .oi-wf-list{ grid-template-columns:1fr; } }
+  .oi-panel [data-screen="build-workforce"] .david-workforce-card{ display:block; }
+  .oi-panel [data-screen="build-workforce"] .david-workforce-card .wf-avatar{ float:left; width:32px; height:32px; margin:0 8px 4px 0; }
+  .oi-panel [data-screen="build-workforce"] .wf-text p{ clear:both; }
+  .oi-panel [data-screen="build-workforce"] .david-workforce-card > div.wf-avatar{ display:flex !important; }
+  .oi-panel .oi-screen[data-screen="report"]{ padding:12px 24px 14px; }
+  .oi-panel [data-screen="report"] .oi-brief-text .oi-consultant img{ width:26px; height:26px; }
+  .oi-panel [data-screen="report"] .oi-brief-text p{ font-size:11px; line-height:1.4; margin-bottom:4px; }
+  .oi-panel [data-screen="report"] .oi-brief-card{ padding:7px; }
+  .oi-panel [data-screen="report"] .oi-brief-grid + .oi-link-btn{ margin:4px auto 6px !important; padding:2px 10px; }
+  .oi-panel [data-screen="report"] .oi-brief-actions-row{ margin-bottom:6px; }
+  .oi-panel [data-screen="report"] .oi-brief-actions-row .oi-btn{ padding:8px 12px; }
+  .oi-panel [data-screen="report"] .oi-brief-actions-row + .oi-btn{ padding:10px 18px; }
+  .oi-panel [data-screen="report"] .oi-brief-head{ margin-bottom:6px; }
+  .oi-panel [data-screen="report"] .oi-brief{ margin-bottom:6px; }
+  .oi-panel [data-screen="report"] .oi-brief-grid{ gap:5px; }
+  .oi-panel [data-screen="report"] .oi-brief-card{ row-gap:2px; }
+
+  /* Header: smaller name/role text, bigger step numbers. */
+  .oi-panel .david-topbar-text strong{ font-size:11.5px; }
+  .oi-panel .david-topbar-text span{ font-size:9.5px; }
+  .oi-panel .david-topbar-text{ line-height:1.2; }
+  @media (min-width:761px){
+    .oi-panel:not(.oi-step5) .david-topbar{ gap:6px; }
+    .oi-panel:not(.oi-step5) .oi-steps{ gap:1px; }
+    .oi-panel:not(.oi-step5) .oi-steps li{ flex:none; width:19px; height:19px; font-size:9.5px; border-width:1.5px; }
+  }
+  .oi-panel.oi-step5 .oi-steps li{ width:22px; height:22px; font-size:10.5px; }
+  @media (min-width:761px){
+    .oi-panel:not(.oi-step5) .david-topbar{ gap:4px; padding-right:50px; }
+    .oi-panel:not(.oi-step5) .oi-steps li{ width:18px; height:18px; font-size:9px; }
+    .oi-panel:not(.oi-step5) .oi-top-back{ width:26px; height:26px; }
+    .oi-panel:not(.oi-step5) .oi-top-avatar, .oi-panel:not(.oi-step5) .oi-top-avatar img{ width:28px; height:28px; }
+    .oi-panel .david-topbar-text{ flex:none; margin-right:2px; }
+  }
