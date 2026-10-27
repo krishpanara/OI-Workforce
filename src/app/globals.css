@@ -951,9 +951,9 @@
   @media (max-width:440px){ .oi-panel .oi-steps{ flex-wrap:nowrap; gap:3px; } .oi-steps li{ width:18px; height:18px; font-size:9px; } }
   @media (max-width:600px){ .oi-panel{ max-height:100vh; } .oi-panel.oi-fixed-h{ height:100vh; } }
   .oi-steps{ flex:1; min-width:0; display:flex; flex-wrap:wrap; justify-content:center; gap:4px; list-style:none; margin:0; padding:0; }
-  .oi-steps li{ width:20px; height:20px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:10px; font-weight:700; line-height:1; color:var(--grey); background:#fff; border:1.5px solid var(--line); transition:background .3s ease, color .3s ease, border-color .3s ease, box-shadow .3s ease; }
+  .oi-steps li{ width:20px; height:20px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:10px; font-weight:700; line-height:1; color:#fff; background:#EF4444; border:1.5px solid #EF4444; transition:background .3s ease, color .3s ease, border-color .3s ease, box-shadow .3s ease; }
   .oi-steps li.done{ background:#22C55E; border-color:#22C55E; color:#fff; }
-  .oi-steps li.current{ background:#EF4444; border-color:#EF4444; color:#fff; box-shadow:0 0 0 3px rgba(239,68,68,.2); }
+  .oi-steps li.current{ background:#2563EB; border-color:#2563EB; color:#fff; box-shadow:0 0 0 3px rgba(37,99,235,.22); }
   .oi-top-back{ width:28px; height:28px; flex:none; border-radius:50%; border:none; background:rgba(0,27,92,.06); color:var(--navy); display:flex; align-items:center; justify-content:center; cursor:pointer; transition:background .2s ease; }
   .oi-top-back:hover{ background:rgba(0,27,92,.12); }
   .oi-panel .david-voice-toggle{ margin:0; width:32px; height:32px; padding:0; flex:none; justify-content:center; border-radius:50%; }
@@ -1247,6 +1247,7 @@
   .oi-step-num{ display:flex; align-items:center; justify-content:center; width:22px; height:22px; border-radius:50%; background:var(--navy); color:#fff; font-size:11px; font-weight:700; flex:none; }
   .oi-step-row strong{ display:block; font-size:13.5px; color:var(--navy); }
   .oi-step-row span{ font-size:12.5px; color:var(--grey); line-height:1.4; }
+  .oi-step-row .oi-step-num{ color:#fff; }
 
   /* 8 · Find organisation */
   .oi-found-card{ display:grid; grid-template-columns:86px 1fr 128px; gap:16px; background:var(--tint-white); border:1px solid var(--line); border-radius:12px; padding:14px; }
@@ -1404,9 +1405,8 @@
   .oi-panel [data-screen="company"] .oi-found-tags{ flex-direction:row; flex-wrap:nowrap; gap:5px; min-width:0; }
   .oi-panel [data-screen="company"] .oi-chip-sm{ padding:4px 7px; gap:4px; font-size:10.5px; }
   .oi-panel [data-screen="company"] .oi-chip-sm svg{ width:12px; height:12px; }
-  .oi-panel [data-screen="company"] .oi-found-card + .oi-form-grid{ grid-template-columns:repeat(3,1fr); margin-top:12px !important; }
   .oi-panel [data-screen="company"] .oi-found-q{ margin:12px 0 8px; font-size:13.5px; }
-  @media (max-width:440px){ .oi-panel [data-screen="company"] .oi-form-grid, .oi-panel [data-screen="company"] .oi-found-card + .oi-form-grid{ grid-template-columns:1fr; } }
+  @media (max-width:440px){ .oi-panel [data-screen="company"] .oi-form-grid{ grid-template-columns:1fr; } }
 
   /* 9 · Quick questions — fit every question without scrolling; same content, tighter layout; the popup is the card. */
   .oi-panel .oi-screen[data-screen="discovery"]{ padding:18px 24px; }
@@ -1673,3 +1673,30 @@
     .oi-panel:not(.oi-step5) .oi-top-avatar, .oi-panel:not(.oi-step5) .oi-top-avatar img{ width:28px; height:28px; }
     .oi-panel .david-topbar-text{ flex:none; margin-right:2px; }
   }
+
+  /* Step change: slide the new step in — from the right going forward, from the left going back. Step 9 slides between questions. */
+  .oi-panel .david-body{ overflow-x:hidden; }
+  .oi-panel .david-screen.active{ animation:oiSlideIn .5s cubic-bezier(.22,.8,.3,1) both; }
+  .oi-panel.oi-slide-back .david-screen.active{ animation-name:oiSlideInBack; }
+  .oi-panel .david-screen.active[data-screen="discovery"]{ animation:none; }
+  .oi-panel [data-screen="discovery"] .oi-card{ animation:oiSlideIn .5s cubic-bezier(.22,.8,.3,1) both; }
+  .oi-panel.oi-slide-back [data-screen="discovery"] .oi-card{ animation-name:oiSlideInBack; }
+  @keyframes oiSlideIn{ from{ opacity:0; transform:translateX(56px); } to{ opacity:1; transform:none; } }
+  @keyframes oiSlideInBack{ from{ opacity:0; transform:translateX(-56px); } to{ opacity:1; transform:none; } }
+  @media (prefers-reduced-motion: reduce){ .oi-panel .david-screen.active, .oi-panel [data-screen="discovery"] .oi-card{ animation:none; } }
+
+  /* 9 · "Who will be using OI?" — round portraits so every face shows fully (wide strips cropped the faces). */
+  .oi-panel [data-screen="discovery"] .oi-opt-photo-btn{ justify-content:center; padding:10px 8px; gap:7px; }
+  .oi-panel [data-screen="discovery"] .oi-opt-photo{ width:58px; height:58px; border-radius:50%; background-size:cover; background-position:center 22%; box-shadow:0 0 0 3px var(--tint-blue); }
+  .oi-panel [data-screen="discovery"] .oi-opt.selected .oi-opt-photo{ box-shadow:0 0 0 3px rgba(255,255,255,.7); }
+  .oi-panel [data-screen="discovery"] .oi-opt-grid-photo .oi-opt:not(.oi-opt-photo-btn){ flex-direction:column; justify-content:center; text-align:center; }
+  /* 9 · tools: logos without the box, larger. */
+  .oi-panel [data-screen="discovery"] .oi-opt-logo{ width:34px; height:34px; background:none; border:none; border-radius:0; }
+  .oi-panel [data-screen="discovery"] .oi-opt-logo svg{ width:30px; height:30px; }
+  .oi-panel [data-screen="discovery"] .oi-opt-icon-btn.selected .oi-opt-logo{ background:none; border:none; }
+  /* 9 · Personal OI beside the question: larger photo, name and role on one line each. */
+  .oi-panel [data-screen="discovery"] .oi-q-row{ align-items:center; }
+  .oi-panel [data-screen="discovery"] .oi-q-avatar{ width:96px; gap:2px; }
+  .oi-panel [data-screen="discovery"] .oi-q-avatar img{ width:60px; height:60px; border:3px solid #fff; box-shadow:0 0 0 2px var(--tint-blue), 0 6px 14px rgba(0,27,92,.14); margin-bottom:5px; }
+  .oi-panel [data-screen="discovery"] .oi-q-avatar strong{ font-size:12px; white-space:nowrap; }
+  .oi-panel [data-screen="discovery"] .oi-q-avatar em{ font-size:10px; color:var(--blue); white-space:nowrap; }

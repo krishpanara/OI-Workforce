@@ -236,13 +236,11 @@ function growthPhrase(a: Record<string, string | string[]>): string {
 const HIGH_STAKES = ['Legal','Healthcare','Mining','Construction'];
 const SMALL_SIZES = ['1–10','11–50'];
 const LARGE_SIZES = ['251–1,000','1,000+'];
-const SIZE_OPTIONS = ['1–10','11–50','51–250','251–1,000','1,000+'];
 const COUNTRY_OPTIONS = ['Ghana','Nigeria','Kenya','South Africa','United Kingdom','Ireland','United States','Canada','India','United Arab Emirates','Other'];
 const CITY_BY_COUNTRY: Record<string, string> = {
   Ghana: 'Accra', Nigeria: 'Lagos', Kenya: 'Nairobi', 'South Africa': 'Johannesburg', 'United Kingdom': 'London',
   Ireland: 'Dublin', 'United States': 'New York', Canada: 'Toronto', India: 'Mumbai', 'United Arab Emirates': 'Dubai',
 };
-const ROLE_OPTIONS = ['Managing Director','CEO / Founder','Director','Finance','Operations','HR / People','Sales & Marketing','Other'];
 
 const INDUSTRY_ICONS: Record<string, string> = {
   Banking: '<path d="M3 21h18M4 21V10M20 21V10M3 10l9-6 9 6M7 10v11M12 10v11M17 10v11"/>',
@@ -336,34 +334,44 @@ const WHOUSES_PHOTOS: Record<string, string> = {
   'Most of the organisation (51–250 people)': IMAGES.avatarConsult9,
   'Entire organisation (250+ people)': IMAGES.avatarConsult11,
 };
+// Real brand marks for the tools question (Simple Icons, CC0; Microsoft and Teams drawn by hand). [fill, path] pairs on a 24×24 grid.
+const BRAND_PATHS: Record<string, [string, string][]> = {
+  "Slack": [['#E01E5A', 'M5.042 15.165a2.528 2.528 0 0 1-2.52 2.523A2.528 2.528 0 0 1 0 15.165a2.527 2.527 0 0 1 2.522-2.52h2.52v2.52zM6.313 15.165a2.527 2.527 0 0 1 2.521-2.52 2.527 2.527 0 0 1 2.521 2.52v6.313A2.528 2.528 0 0 1 8.834 24a2.528 2.528 0 0 1-2.521-2.522v-6.313z'], ['#36C5F0', 'M8.834 5.042a2.528 2.528 0 0 1-2.521-2.52A2.528 2.528 0 0 1 8.834 0a2.528 2.528 0 0 1 2.521 2.522v2.52H8.834zM8.834 6.313a2.528 2.528 0 0 1 2.521 2.521 2.528 2.528 0 0 1-2.521 2.521H2.522A2.528 2.528 0 0 1 0 8.834a2.528 2.528 0 0 1 2.522-2.521h6.312z'], ['#2EB67D', 'M18.956 8.834a2.528 2.528 0 0 1 2.522-2.521A2.528 2.528 0 0 1 24 8.834a2.528 2.528 0 0 1-2.522 2.521h-2.522V8.834zM17.688 8.834a2.528 2.528 0 0 1-2.523 2.521 2.527 2.527 0 0 1-2.52-2.521V2.522A2.527 2.527 0 0 1 15.165 0a2.528 2.528 0 0 1 2.523 2.522v6.312z'], ['#ECB22E', 'M15.165 18.956a2.528 2.528 0 0 1 2.523 2.522A2.528 2.528 0 0 1 15.165 24a2.527 2.527 0 0 1-2.52-2.522v-2.522h2.52zM15.165 17.688a2.527 2.527 0 0 1-2.52-2.523 2.526 2.526 0 0 1 2.52-2.52h6.313A2.527 2.527 0 0 1 24 15.165a2.528 2.528 0 0 1-2.522 2.523h-6.313z']],
+  "Salesforce": [['#00A1E0', 'M10.006 5.415a4.195 4.195 0 013.045-1.306c1.56 0 2.954.9 3.69 2.205.63-.3 1.35-.45 2.1-.45 2.85 0 5.159 2.34 5.159 5.22s-2.31 5.22-5.176 5.22c-.345 0-.69-.044-1.02-.104a3.75 3.75 0 01-3.3 1.95c-.6 0-1.155-.15-1.65-.375A4.314 4.314 0 018.88 20.4a4.302 4.302 0 01-4.05-2.82c-.27.062-.54.076-.825.076-2.204 0-4.005-1.8-4.005-4.05 0-1.5.811-2.805 2.01-3.51-.255-.57-.39-1.2-.39-1.846 0-2.58 2.1-4.65 4.65-4.65 1.53 0 2.85.705 3.72 1.8']],
+  "HubSpot": [['#FF7A59', 'M18.164 7.93V5.084a2.198 2.198 0 001.267-1.978v-.067A2.2 2.2 0 0017.238.845h-.067a2.2 2.2 0 00-2.193 2.193v.067a2.196 2.196 0 001.252 1.973l.013.006v2.852a6.22 6.22 0 00-2.969 1.31l.012-.01-7.828-6.095A2.497 2.497 0 104.3 4.656l-.012.006 7.697 5.991a6.176 6.176 0 00-1.038 3.446c0 1.343.425 2.588 1.147 3.607l-.013-.02-2.342 2.343a1.968 1.968 0 00-.58-.095h-.002a2.033 2.033 0 102.033 2.033 1.978 1.978 0 00-.1-.595l.005.014 2.317-2.317a6.247 6.247 0 104.782-11.134l-.036-.005zm-.964 9.378a3.206 3.206 0 113.215-3.207v.002a3.206 3.206 0 01-3.207 3.207z']],
+  "Xero": [['#13B5EA', 'M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm6.585 14.655c-1.485 0-2.69-1.206-2.69-2.689 0-1.485 1.207-2.691 2.69-2.691 1.485 0 2.69 1.207 2.69 2.691s-1.207 2.689-2.69 2.689zM7.53 14.644c-.099 0-.192-.041-.267-.116l-2.043-2.04-2.052 2.047c-.069.068-.16.108-.258.108-.202 0-.368-.166-.368-.368 0-.099.04-.191.111-.263l2.04-2.05-2.038-2.047c-.075-.069-.113-.162-.113-.261 0-.203.166-.366.368-.366.098 0 .188.037.258.105l2.055 2.048 2.048-2.045c.069-.071.162-.108.26-.108.211 0 .375.165.375.366 0 .098-.029.188-.104.258l-2.056 2.055 2.055 2.051c.068.069.104.16.104.258 0 .202-.165.368-.365.368h-.01zm8.017-4.591c-.796.101-.882.476-.882 1.404v2.787c0 .202-.165.366-.366.366-.203 0-.367-.165-.368-.366v-4.53c0-.204.16-.366.362-.366.166 0 .316.125.346.289.27-.209.6-.317.93-.317h.105c.195 0 .359.165.359.368 0 .201-.164.352-.375.359 0 0-.09 0-.164.008l.053-.002zm-3.091 2.205H8.625c0 .019.003.037.006.057.02.105.045.211.083.31.194.531.765 1.275 1.829 1.29.33-.003.631-.086.9-.229.21-.12.391-.271.525-.428.045-.058.09-.112.12-.168.18-.229.405-.186.54-.083.164.135.18.391.045.57l-.016.016c-.21.27-.435.495-.689.66-.255.164-.525.284-.811.345-.33.09-.645.104-.975.06-1.095-.135-2.01-.93-2.28-2.01-.06-.21-.09-.42-.09-.645 0-.855.421-1.695 1.125-2.205.885-.615 2.085-.66 3-.075.63.405 1.035 1.021 1.185 1.771.075.419-.21.794-.734.81l.068-.046zm6.129-2.223c-1.064 0-1.931.865-1.931 1.931 0 1.064.866 1.931 1.931 1.931s1.931-.867 1.931-1.931c0-1.065-.866-1.933-1.931-1.933v.002zm0 2.595c-.367 0-.666-.297-.666-.666 0-.367.3-.665.666-.665.367 0 .667.299.667.665 0 .369-.3.667-.667.666zm-8.04-2.603c-.91 0-1.672.623-1.886 1.466v.03h3.776c-.203-.855-.973-1.494-1.891-1.494v-.002z']],
+  "SAP": [['#0FAAFF', 'M0 6.064v11.872h12.13L24 6.064zm3.264 2.208h.005c.863.001 1.915.245 2.676.633l-.82 1.43c-.835-.404-1.255-.442-1.73-.467-.708-.038-1.064.215-1.069.488-.007.332.669.633 1.305.838.964.306 2.19.715 2.377 1.9L7.77 8.437h2.046l2.064 5.576-.007-5.575h2.37c2.257 0 3.318.764 3.318 2.519 0 1.575-1.09 2.514-2.936 2.514h-.763l-.01 2.094-3.588-.003-.25-.908c-.37.122-.787.189-1.23.189-.456 0-.885-.071-1.263-.2l-.358.919-2 .006.09-.462c-.029.025-.057.05-.087.074-.535.43-1.208.629-2.037.644l-.213.002a5.075 5.075 0 0 1-2.581-.675l.73-1.448c.79.467 1.286.572 1.956.558.347-.007.598-.07.761-.239a.557.557 0 0 0 .156-.369c.007-.376-.53-.553-1.185-.756-.531-.164-1.135-.389-1.606-.735-.559-.41-.825-.924-.812-1.65a1.99 1.99 0 0 1 .566-1.377c.519-.537 1.357-.863 2.363-.863zm10.597 1.67v1.904h.521c.694 0 1.247-.23 1.248-.964 0-.709-.554-.94-1.248-.94zm-5.087.767l-.748 2.362c.223.085.481.133.757.133.268 0 .52-.047.742-.126l-.736-2.37z']],
+  "Notion": [['#000000', 'M4.459 4.208c.746.606 1.026.56 2.428.466l13.215-.793c.28 0 .047-.28-.046-.326L17.86 1.968c-.42-.326-.981-.7-2.055-.607L3.01 2.295c-.466.046-.56.28-.374.466zm.793 3.08v13.904c0 .747.373 1.027 1.214.98l14.523-.84c.841-.046.935-.56.935-1.167V6.354c0-.606-.233-.933-.748-.887l-15.177.887c-.56.047-.747.327-.747.933zm14.337.745c.093.42 0 .84-.42.888l-.7.14v10.264c-.608.327-1.168.514-1.635.514-.748 0-.935-.234-1.495-.933l-4.577-7.186v6.952L12.21 19s0 .84-1.168.84l-3.222.186c-.093-.186 0-.653.327-.746l.84-.233V9.854L7.822 9.76c-.094-.42.14-1.026.793-1.073l3.456-.233 4.764 7.279v-6.44l-1.215-.139c-.093-.514.28-.887.747-.933zM1.936 1.035l13.31-.98c1.634-.14 2.055-.047 3.082.7l4.249 2.986c.7.513.934.653.934 1.213v16.378c0 1.026-.373 1.634-1.68 1.726l-15.458.934c-.98.047-1.448-.093-1.962-.747l-3.129-4.06c-.56-.747-.793-1.306-.793-1.96V2.667c0-.839.374-1.54 1.447-1.632z']],
+  "Jira": [['#0052CC', 'M11.571 11.513H0a5.218 5.218 0 0 0 5.232 5.215h2.13v2.057A5.215 5.215 0 0 0 12.575 24V12.518a1.005 1.005 0 0 0-1.005-1.005zm5.723-5.756H5.736a5.215 5.215 0 0 0 5.215 5.214h2.129v2.058a5.218 5.218 0 0 0 5.215 5.214V6.758a1.001 1.001 0 0 0-1.001-1.001zM23.013 0H11.455a5.215 5.215 0 0 0 5.215 5.215h2.129v2.057A5.215 5.215 0 0 0 24 12.483V1.005A1.001 1.001 0 0 0 23.013 0Z']],
+};
 const TOOL_ICONS: Record<string, string> = {
-  Slack: '<path d="M8 10h8M8 14h5"/><path d="M21 12c0 4.4-4 8-9 8-1.1 0-2.2-.2-3.2-.5L3 21l1.5-4.3C3.6 15.4 3 13.8 3 12c0-4.4 4-8 9-8s9 3.6 9 8z"/>',
-  Teams: ICONS.people,
-  Salesforce: '<path d="M3 15.5a4 4 0 004 4h10a4 4 0 001-7.9 5 5 0 00-9.6-1.9A4 4 0 003 15.5z"/>',
-  HubSpot: ICONS.bolt,
-  Xero: '<ellipse cx="12" cy="6" rx="7" ry="3"/><path d="M5 6v6c0 1.7 3.1 3 7 3s7-1.3 7-3V6M5 12v6c0 1.7 3.1 3 7 3s7-1.3 7-3v-6"/>',
-  SAP: '<rect x="4" y="4" width="16" height="4" rx="1"/><rect x="4" y="10" width="16" height="4" rx="1"/><rect x="4" y="16" width="16" height="4" rx="1"/>',
-  Notion: ICONS.file,
-  Jira: '<path d="M5 3v18M5 4h11l-2 4 2 4H5"/>',
-  "We don't use many tools yet": ICONS.question,
+  [OTHER_OPTION]: '<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4z"/>',
+  "We don't use many tools yet": '<circle cx="12" cy="12" r="9"/><path d="M9 9l6 6M15 9l-6 6"/>',
 };
-const TOOL_COLORS: Record<string, string> = {
-  Slack: '#4A154B', Teams: '#5059C9', Salesforce: '#00A1E0', HubSpot: '#FF7A59', Xero: '#13B5EA',
-  SAP: '#0FAAFF', Notion: '#37352F', Jira: '#0052CC', "We don't use many tools yet": '#5B6472',
-};
-function MultiLogo({ name }: { name: 'ms365' | 'google' }) {
-  if (name === 'ms365') return (
+function BrandLogo({ name }: { name: string }) {
+  if (name === 'Microsoft 365') return (
     <svg width="22" height="22" viewBox="0 0 22 22" aria-hidden="true">
       <rect x="1" y="1" width="9" height="9" fill="#F35325" /><rect x="12" y="1" width="9" height="9" fill="#81BC06" />
       <rect x="1" y="12" width="9" height="9" fill="#05A6F0" /><rect x="12" y="12" width="9" height="9" fill="#FFBA08" />
     </svg>
   );
-  return (
-    <svg width="22" height="22" viewBox="0 0 22 22" aria-hidden="true">
-      <circle cx="11" cy="4" r="3.4" fill="#4285F4" /><circle cx="18" cy="15" r="3.4" fill="#34A853" />
-      <circle cx="4" cy="15" r="3.4" fill="#FBBC05" /><circle cx="11" cy="11" r="3" fill="#EA4335" />
+  if (name === 'Google Workspace') return (
+    <svg width="22" height="22" viewBox="0 0 48 48" aria-hidden="true">
+      <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z" />
+      <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z" />
+      <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z" />
+      <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z" />
     </svg>
   );
+  if (name === 'Teams') return (
+    <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true">
+      <circle cx="19.2" cy="6.6" r="2.4" fill="#7B83EB" /><rect x="15.6" y="10" width="7.4" height="8.6" rx="2.6" fill="#7B83EB" />
+      <circle cx="13" cy="5.4" r="3" fill="#5059C9" /><rect x="8.6" y="9.4" width="9.6" height="11" rx="3" fill="#5059C9" />
+      <rect x="1" y="6.5" width="12" height="12" rx="2" fill="#4B53BC" /><path d="M4 9.5h6v1.8H7.9V16H6.1v-4.7H4z" fill="#fff" />
+    </svg>
+  );
+  const parts = BRAND_PATHS[name]; if (!parts) return null;
+  return <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true">{parts.map(([fill, d], i) => <path key={i} fill={fill} d={d} />)}</svg>;
 }
 const SHELL_NAV: [string, string][] = [['My OI', ICONS.myoi],['Command Centre', ICONS.grid],['Projects', ICONS.folder],['Work', ICONS.briefcase],['Documents', ICONS.file],['People', ICONS.people],['Meetings', ICONS.calendar],['Knowledge Bank', ICONS.book],['More', ICONS.more]];
 
@@ -410,6 +418,7 @@ type SpeechRecognitionLike = { lang: string; interimResults: boolean; start: () 
 // ── Component ──────────────────────────────────────────────────────────────
 export default function DavidModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
   const [screen, setScreen] = useState('intro');
+  const [slideDir, setSlideDir] = useState<'fwd' | 'back'>('fwd');
   const [signup, setSignup] = useState({ firstName: '', lastName: '', email: '', phone: '' });
   const [selIndustry, setSelIndustry] = useState('');
   const [showAllIndustries, setShowAllIndustries] = useState(false);
@@ -451,8 +460,8 @@ export default function DavidModal({ isOpen, onClose }: { isOpen: boolean; onClo
   const historyRef = useRef<string[]>([]);
 
   function later(fn: () => void, ms: number) { timers.current.push(setTimeout(fn, ms)); }
-  function nav(s: string) { setScreen(prev => { if (!TRANSIENT_SCREENS.has(prev)) historyRef.current.push(prev); return s; }); }
-  function goBack() { const prev = historyRef.current.pop(); if (prev) setScreen(prev); }
+  function nav(s: string) { setSlideDir('fwd'); setScreen(prev => { if (!TRANSIENT_SCREENS.has(prev)) historyRef.current.push(prev); return s; }); }
+  function goBack() { const prev = historyRef.current.pop(); if (prev) { setSlideDir('back'); setScreen(prev); } }
 
   useBodyScrollLock(isOpen);
 
@@ -464,7 +473,7 @@ export default function DavidModal({ isOpen, onClose }: { isOpen: boolean; onClo
 
   useEffect(() => {
     if (isOpen) {
-      setScreen('intro'); historyRef.current = []; setSignup({ firstName: '', lastName: '', email: '', phone: '' }); setSelIndustry(''); setShowAllIndustries(false); setSelRole('');
+      setScreen('intro'); setSlideDir('fwd'); historyRef.current = []; setSignup({ firstName: '', lastName: '', email: '', phone: '' }); setSelIndustry(''); setShowAllIndustries(false); setSelRole('');
       setChatMsgs([]); setContinueVisible(false); setListening(false); setMicMessage(''); setMomentCount(0);
       setInvite({ name: '', email: '', sent: false }); setCompany({ company: '', website: '', email: '', industry: '', country: '', size: '', role: '', none: false });
       setOrgStage('form'); setOrgPct(0);
@@ -631,7 +640,7 @@ export default function DavidModal({ isOpen, onClose }: { isOpen: boolean; onClo
     const prev = discIdx - 1;
     if (prev < 0) { setOrgStage('found'); goBack(); return; }
     const q = sr.current.activeQuestions[prev]; const existing = sr.current.orgAnswers[q.key];
-    setDiscIdx(prev); setDiscSel(q.freeText ? [] : toArr(existing)); setOtherText(q.freeText ? String(existing || '') : '');
+    setSlideDir('back'); setDiscIdx(prev); setDiscSel(q.freeText ? [] : toArr(existing)); setOtherText(q.freeText ? String(existing || '') : '');
   }
   function confirmDisc() {
     const q = sr.current.activeQuestions[discIdx];
@@ -639,7 +648,7 @@ export default function DavidModal({ isOpen, onClose }: { isOpen: boolean; onClo
     else { const vals = discSel.map(v => v === OTHER_OPTION ? otherText.trim() : v).filter(Boolean); sr.current.orgAnswers[q.key] = q.multi ? vals : (vals[0] || ''); }
     const next = discIdx + 1;
     if (next >= sr.current.activeQuestions.length) { startCapacityReport(); }
-    else { setDiscIdx(next); setDiscSel([]); setOtherText(''); speak(sr.current.activeQuestions[next].text); }
+    else { setSlideDir('fwd'); setDiscIdx(next); setDiscSel([]); setOtherText(''); speak(sr.current.activeQuestions[next].text); }
   }
 
   // ── Step 10: report ──
@@ -760,7 +769,7 @@ export default function DavidModal({ isOpen, onClose }: { isOpen: boolean; onClo
 
   return (
     <div className="david-modal open" role="dialog" aria-modal="true" aria-label="Meet your Personal OI" onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
-      <div className={'david-panel oi-panel'+(stepNum === 5 ? ' oi-step5' : '')+(screen === 'chat' ? ' oi-fixed-h' : '')}>
+      <div className={'david-panel oi-panel'+(slideDir === 'back' ? ' oi-slide-back' : '')+(stepNum === 5 ? ' oi-step5' : '')+(screen === 'chat' ? ' oi-fixed-h' : '')}>
         <button className="david-close" onClick={onClose} aria-label="Close">&times;</button>
         <div className="david-topbar">
           {canGoBack && <button type="button" className="oi-top-back" onClick={headerBack} aria-label="Back" title="Back"><Ico d={ICONS.back} size={15} sw={2.2} /></button>}
@@ -1048,17 +1057,6 @@ export default function DavidModal({ isOpen, onClose }: { isOpen: boolean; onClo
                     </div>
                   </div>
                 </div>
-                <div className="oi-form-grid" style={{ marginTop:16 }}>
-                  <label className="oi-row"><span>Industry</span>
-                    <select value={company.industry || sr.current.industry} onChange={e => setCompany(c => ({ ...c, industry: e.target.value }))}>{Object.keys(INDUSTRY_ICONS).map(o => <option key={o} value={o}>{o}</option>)}</select>
-                  </label>
-                  <label className="oi-row"><span>Company size</span>
-                    <select value={company.size} onChange={e => setCompany(c => ({ ...c, size: e.target.value }))}><option value="">Select</option>{SIZE_OPTIONS.map(o => <option key={o} value={o}>{o} people</option>)}</select>
-                  </label>
-                  <label className="oi-row"><span>Your role</span>
-                    <select value={company.role} onChange={e => setCompany(c => ({ ...c, role: e.target.value }))}><option value="">Select</option>{ROLE_OPTIONS.map(o => <option key={o} value={o}>{o}</option>)}</select>
-                  </label>
-                </div>
                 <p className="oi-found-q">Is this your organisation?</p>
                 <div style={{ display:'flex', gap:10 }}>
                   <button type="button" className="oi-btn oi-btn-outline oi-btn-block" onClick={orgTryAgain}>No, try again</button>
@@ -1071,7 +1069,7 @@ export default function DavidModal({ isOpen, onClose }: { isOpen: boolean; onClo
           {/* 9 · Whilst I'm getting to know your company */}
           <div className={'david-screen oi-screen'+(sc('discovery')?' active':'')} data-screen="discovery">
             {currentDiscQ && (
-              <div className="oi-card oi-narrow">
+              <div className="oi-card oi-narrow" key={discIdx}>
                 <p className="oi-q-intro">Whilst I&rsquo;m getting to know your company, let me ask you&hellip;</p>
                 <div className="oi-q-row">
                   <div className="oi-q-avatar">
@@ -1093,13 +1091,10 @@ export default function DavidModal({ isOpen, onClose }: { isOpen: boolean; onClo
                 ) : currentDiscQ.key === 'tools' ? (<>
                   <div className="oi-opt-grid oi-opt-grid-icons">
                     {currentDiscQ.options.filter(o => o!==OTHER_OPTION && o!=="We don't use many tools yet").map(opt => {
-                      const on = discSel.includes(opt); const color = TOOL_COLORS[opt];
+                      const on = discSel.includes(opt);
                       return (
                         <button key={opt} type="button" className={'oi-opt oi-opt-icon-btn'+(on?' selected':'')} aria-pressed={on} onClick={() => toggleDisc(opt)}>
-                          {on ? <span className="oi-opt-check"><Ico d={ICONS.check} size={13} sw={3} /></span>
-                            : opt==='Microsoft 365' ? <span className="oi-opt-logo"><MultiLogo name="ms365" /></span>
-                            : opt==='Google Workspace' ? <span className="oi-opt-logo"><MultiLogo name="google" /></span>
-                            : <span className="oi-opt-logo" style={{ color }}><Ico d={TOOL_ICONS[opt]} size={20} sw={1.8} /></span>}
+                          {on ? <span className="oi-opt-check"><Ico d={ICONS.check} size={13} sw={3} /></span> : <span className="oi-opt-logo"><BrandLogo name={opt} /></span>}
                           <span>{opt}</span>
                         </button>
                       );
