@@ -1,5 +1,5 @@
 'use client';
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, type CSSProperties } from 'react';
 import { IMAGES } from '@/lib/images';
 import { useBodyScrollLock } from '@/hooks/useBodyScrollLock';
 
@@ -85,14 +85,14 @@ const INDUSTRY_HOOKS: Record<string, typeof DEFAULT_HOOK> = {
 };
 
 const RESPONSES = [
-  { prompt: "Prepare tomorrow's board pack", trigger: ['board pack','board meeting'], roles: ['CEO','Finance Manager'], reply: "On it. I've pulled the Q3 numbers from Finance, the project status from Operations, and the two risk flags Sarah logged this week. Board pack will be ready in your Outputs panel — want it as a Word doc, a slide deck, or both?" },
-  { prompt: "Show me this month's biggest operational risks", trigger: ['operational risk','biggest risk','risks'], roles: ['Operations Manager','CEO'], reply: "Three stand out. A supplier contract renewal is 9 days overdue for review. Warehouse capacity is running at 94% with no buffer before peak season. And two customer complaints this week both mention the same shipping delay — that's a pattern, not a one-off. Want me to draft next steps for any of these?" },
-  { prompt: "Summarise last week's leadership meeting", trigger: ['summarise','summarize','leadership meeting','last week'], roles: ['CEO'], reply: "Key decisions: Q2 budget approved, the new supplier was selected over the incumbent, and the Kumasi hiring freeze was lifted. Two open actions are still with Michael Brown and Sarah Johnson — both due Friday. I logged all of this to the organisation ledger as it happened." },
-  { prompt: "Which customers are at risk?", trigger: ['customers at risk','at-risk customer','churn'], roles: ['Sales Manager','CEO'], reply: "Two accounts show the pattern I'd flag: reduced order frequency plus a support ticket that never got a follow-up. I can prepare a save-plan brief for both, or route them straight to whoever owns those relationships — your call." },
-  { prompt: "Review our cashflow", trigger: ['cashflow','cash flow'], roles: ['Finance Manager'], reply: "Cashflow is healthy for the next six weeks, but there's a gap forming in week eight if the Fortwell invoice slips past its due date again — it's happened twice this quarter. Want me to send a reminder now, three days before it's due, or both?" },
-  { prompt: "Show outstanding actions", trigger: ['outstanding action','overdue','outstanding task'], roles: ['Operations Manager','HR Manager'], reply: "Six open actions across the team. Two are overdue — a vendor contract review sitting with Sarah Johnson, and a policy update assigned to Marcus Webb. Everything else is on track for this week's deadlines." },
-  { prompt: "Who approved this project?", trigger: ['who approved','approval','approved this'], roles: ['CEO','Operations Manager'], reply: "Cliff Williams approved it on the 14th, after Sarah Johnson's risk review came back green. The full approval trail — who reviewed it, what changed, and when — is in the organisation ledger if you ever need to show your work." },
-  { prompt: "How's our supplier performance this quarter?", trigger: ['supplier performance','supplier review','vendor performance'], roles: ['Procurement Manager'], reply: "Two suppliers are trending below agreed service levels — both on late-delivery, not quality. One contract renews in three weeks, which is your best leverage point. Want me to draft a renegotiation brief before that renewal date?" },
+  { prompt: "Prepare tomorrow's board pack", trigger: ['board pack','board meeting'], roles: ['CEO','Finance Manager'], reply: "On it — I've pulled Q3 numbers, project status and this week's risk flags. Want the board pack as a Word doc, a slide deck, or both?" },
+  { prompt: "Show me this month's biggest operational risks", trigger: ['operational risk','biggest risk','risks'], roles: ['Operations Manager','CEO'], reply: "Three stand out: a supplier renewal 9 days overdue, warehouse capacity at 94%, and a repeated shipping delay. Want me to draft next steps?" },
+  { prompt: "Summarise last week's leadership meeting", trigger: ['summarise','summarize','leadership meeting','last week'], roles: ['CEO'], reply: "Q2 budget approved, new supplier selected and the Kumasi hiring freeze lifted. Two actions are still open with Michael and Sarah — both due Friday." },
+  { prompt: "Which customers are at risk?", trigger: ['customers at risk','at-risk customer','churn'], roles: ['Sales Manager','CEO'], reply: "Two accounts are ordering less and have an unanswered support ticket. Want a save-plan brief for both, or shall I route them to their owners?" },
+  { prompt: "Review our cashflow", trigger: ['cashflow','cash flow'], roles: ['Finance Manager'], reply: "Cashflow is healthy for six weeks, but week eight is tight if the Fortwell invoice slips again. Want me to send them a reminder?" },
+  { prompt: "Show outstanding actions", trigger: ['outstanding action','overdue','outstanding task'], roles: ['Operations Manager','HR Manager'], reply: "Six open actions, two overdue: a vendor contract review with Sarah Johnson and a policy update with Marcus Webb. The rest are on track." },
+  { prompt: "Who approved this project?", trigger: ['who approved','approval','approved this'], roles: ['CEO','Operations Manager'], reply: "Cliff Williams approved it on the 14th, after Sarah Johnson's risk review came back green. The full trail is in the organisation ledger." },
+  { prompt: "How's our supplier performance this quarter?", trigger: ['supplier performance','supplier review','vendor performance'], roles: ['Procurement Manager'], reply: "Two suppliers are behind on deliveries, and one contract renews in three weeks. Want me to draft a renegotiation brief before then?" },
 ];
 const FOLLOWUPS = [
   { trigger: ['both'], reply: "Perfect. I'll prepare both. You'll find the Word doc and the slide deck in your Outputs panel shortly, ready to share." },
@@ -100,30 +100,6 @@ const FOLLOWUPS = [
   { trigger: ['word doc','word document'], reply: "Done. The Word version will be in your Outputs panel in a moment." },
   { trigger: ['slide deck','presentation'], reply: "Done. The slide deck will be in your Outputs panel in a moment." },
   { trigger: ['thank you','thanks'], reply: "Anytime. Let me know if there's anything else you'd like me to pull together." },
-];
-const OUTPUTS_LIBRARY: Record<string, { t: string; m: string }[]> = {
-  CEO: [{t:'Board Pack — Q3',m:'DOCX · Ready'},{t:'Leadership Meeting Summary',m:'DOCX · Ready'},{t:'Organisation Ledger — This Week',m:'XLSX · Ready'}],
-  'Finance Manager': [{t:'Q2 Financial Report',m:'XLSX · Ready'},{t:'Cashflow Forecast',m:'XLSX · Ready'},{t:'Budget Variance Summary',m:'DOCX · Ready'}],
-  'Operations Manager': [{t:'Project Risk Summary',m:'DOCX · Ready'},{t:'Task Queue Overview',m:'DOCX · Ready'},{t:'Warehouse Capacity Report',m:'XLSX · Ready'}],
-  'HR Manager': [{t:'Workforce Sentiment Report',m:'DOCX · Ready'},{t:'Retention Risk Brief',m:'DOCX · Ready'},{t:'Headcount Summary',m:'XLSX · Ready'}],
-  'Sales Manager': [{t:'Pipeline Health Report',m:'XLSX · Ready'},{t:'At-Risk Accounts Brief',m:'DOCX · Ready'},{t:'Win/Loss Summary',m:'DOCX · Ready'}],
-  'Marketing Manager': [{t:'Campaign Performance Summary',m:'PPTX · Ready'},{t:'Brand Sentiment Report',m:'DOCX · Ready'},{t:'Content Calendar',m:'XLSX · Ready'}],
-  'Procurement Manager': [{t:'Supplier Risk Review',m:'DOCX · Ready'},{t:'Contract Renewal Tracker',m:'XLSX · Ready'},{t:'Spend by Category',m:'XLSX · Ready'}],
-};
-const MEETING_REASON: Record<string, string[]> = {
-  CEO: ['to walk through it before you\'re in front of the board','to align on it ahead of Thursday\'s leadership call'],
-  'Finance Manager': ['to go through the numbers together','to sign off on it before month-end close'],
-  'Operations Manager': ['to cover what\'s blocking the warehouse','to walk through this week\'s bottlenecks'],
-  'HR Manager': ['to discuss the Kumasi team','to go through this quarter\'s retention numbers'],
-  'Sales Manager': ['to go over the at-risk accounts','to plan next steps on the pipeline'],
-  'Marketing Manager': ['to review the campaign numbers','to plan next quarter\'s content off the back of it'],
-  'Procurement Manager': ['to discuss the contract renewal','to go through supplier terms before they lapse'],
-};
-const MEETING_CONTACTS = ['Jane Taylor','Michael Osei','Priya Anand'];
-const GREETING_TEMPLATES = [
-  (n: string, t: string, r: string, c: string, rs: string) => `Good ${t}, ${n}. I've been through your emails and today's diary already. Your ${r} is ready in Outputs, and I've put a 3pm with ${c} in your diary ${rs}. Anything else you'd like me to do?`,
-  (n: string, t: string, r: string, c: string, rs: string) => `Morning, ${n}. While you were getting in, I finished your ${r} — it's in Outputs now — and booked ${c} in for 3pm ${rs}. What would you like me to look at next?`,
-  (n: string, t: string, r: string, c: string, rs: string) => `${n}, good ${t}. I've cleared your inbox and diary for today, pulled together your ${r}, and scheduled ${c} for 3pm ${rs}. Where should I focus next?`,
 ];
 const MOMENT_LINES: { t: string; cls: string }[] = [
   { t: 'In the last few minutes, we’ve looked at performance, prepared for a meeting and joined information across several parts of Copperleaf.', cls: '' },
@@ -384,7 +360,6 @@ const SCREEN_STEP: Record<string, number> = {
 };
 
 // Helpers
-function pick<T>(arr: T[]): T { return arr[Math.floor(Math.random() * arr.length)]; }
 function toArr(v: string | string[] | undefined): string[] { if (!v) return []; return Array.isArray(v) ? v : [v]; }
 function answerText(a: Record<string, string | string[]>, k: string, fb: string, keepCase = false): string {
   const arr = toArr(a[k]); if (!arr.length) return fb;
@@ -459,9 +434,20 @@ export default function DavidModal({ isOpen, onClose }: { isOpen: boolean; onClo
   const msgId = useRef(0);
   const historyRef = useRef<string[]>([]);
 
+  // Steps the visitor actually finished by moving forward from them; jumping via the header numbers doesn't count.
+  const [completed, setCompleted] = useState<Set<number>>(() => new Set());
+  const [stepWin, setStepWin] = useState(0);
+  const screenRef = useRef('intro');
+  const jumpingRef = useRef(false);
+
   function later(fn: () => void, ms: number) { timers.current.push(setTimeout(fn, ms)); }
-  function nav(s: string) { setSlideDir('fwd'); setScreen(prev => { if (!TRANSIENT_SCREENS.has(prev)) historyRef.current.push(prev); return s; }); }
-  function goBack() { const prev = historyRef.current.pop(); if (prev) { setSlideDir('back'); setScreen(prev); } }
+  function nav(s: string) {
+    const from = SCREEN_STEP[screenRef.current], to = SCREEN_STEP[s];
+    if (!jumpingRef.current && from && (!to || to > from)) setCompleted(c => c.has(from) ? c : new Set(c).add(from));
+    screenRef.current = s;
+    setSlideDir('fwd'); setScreen(prev => { if (!TRANSIENT_SCREENS.has(prev)) historyRef.current.push(prev); return s; });
+  }
+  function goBack() { const prev = historyRef.current.pop(); if (prev) { screenRef.current = prev; setSlideDir('back'); setScreen(prev); } }
 
   useBodyScrollLock(isOpen);
 
@@ -473,7 +459,7 @@ export default function DavidModal({ isOpen, onClose }: { isOpen: boolean; onClo
 
   useEffect(() => {
     if (isOpen) {
-      setScreen('intro'); setSlideDir('fwd'); historyRef.current = []; setSignup({ firstName: '', lastName: '', email: '', phone: '' }); setSelIndustry(''); setShowAllIndustries(false); setSelRole('');
+      setScreen('intro'); screenRef.current = 'intro'; setCompleted(new Set()); setStepWin(0); setSlideDir('fwd'); historyRef.current = []; setSignup({ firstName: '', lastName: '', email: '', phone: '' }); setSelIndustry(''); setShowAllIndustries(false); setSelRole('');
       setChatMsgs([]); setContinueVisible(false); setListening(false); setMicMessage(''); setMomentCount(0);
       setInvite({ name: '', email: '', sent: false }); setCompany({ company: '', website: '', email: '', industry: '', country: '', size: '', role: '', none: false });
       setOrgStage('form'); setOrgPct(0);
@@ -491,8 +477,6 @@ export default function DavidModal({ isOpen, onClose }: { isOpen: boolean; onClo
 
   useEffect(() => { if (chatLogRef.current) chatLogRef.current.scrollTop = chatLogRef.current.scrollHeight; }, [chatMsgs]);
   useEffect(() => { if (bodyRef.current) bodyRef.current.scrollTop = 0; }, [screen, discIdx]);
-  // The mic is hidden once "I've seen enough" shows, so stop any open listening session.
-  useEffect(() => { if (continueVisible) { try { recogRef.current?.stop(); } catch {} } }, [continueVisible]);
 
   const hasSpeech = typeof window !== 'undefined' && 'speechSynthesis' in window;
   const hasRecognition = typeof window !== 'undefined' && !!((window as unknown as { SpeechRecognition?: unknown; webkitSpeechRecognition?: unknown }).SpeechRecognition || (window as unknown as { SpeechRecognition?: unknown; webkitSpeechRecognition?: unknown }).webkitSpeechRecognition);
@@ -544,9 +528,8 @@ export default function DavidModal({ isOpen, onClose }: { isOpen: boolean; onClo
 
   // ── Step 5: My OI demo ──
   function startChat() {
-    const pos = sr.current.position; const outputs = OUTPUTS_LIBRARY[pos] || OUTPUTS_LIBRARY['CEO'];
-    const report = pick(outputs).t; const reason = pick(MEETING_REASON[pos] || ['to go through it together']); const contact = pick(MEETING_CONTACTS);
-    const greeting = pick(GREETING_TEMPLATES)(sr.current.name, timeOfDay(), report, contact, reason);
+    const name = sr.current.name && sr.current.name !== 'there' ? ', '+sr.current.name : '';
+    const greeting = 'Good '+timeOfDay()+name+'. How can I help you today?';
     msgId.current++; setChatMsgs([{ id: msgId.current, from: 'david', text: greeting }]);
     speak(greeting); sr.current.chatCount = 0; setContinueVisible(false);
   }
@@ -751,6 +734,7 @@ export default function DavidModal({ isOpen, onClose }: { isOpen: boolean; onClo
     }
     if (n >= 5 && !sr.current.position) { sr.current.position = POSITION_OPTIONS[0]; setSelRole(POSITION_OPTIONS[0]); }
     if (n >= 11) populateWorkforce();
+    jumpingRef.current = true;
     switch (n) {
       case 1: nav('intro'); break;
       case 2: nav('industry'); break;
@@ -769,6 +753,7 @@ export default function DavidModal({ isOpen, onClose }: { isOpen: boolean; onClo
       case 15: nav('pricing'); break;
       case 16: startWelcome(); break;
     }
+    jumpingRef.current = false;
     if (backward) setSlideDir('back');
   }
   function startPersonalise() { setVoiceGender(''); setAvatarPhotoSel(null); setPersonalName(''); setPersonalStyle(''); setShowAvatarSection(false); nav('personalise'); }
@@ -789,6 +774,9 @@ export default function DavidModal({ isOpen, onClose }: { isOpen: boolean; onClo
   const isNextSteps = !SCREEN_STEP[screen];
   const canGoBack = screen === 'discovery' || (!TRANSIENT_SCREENS.has(screen) && historyRef.current.length > 0);
   const headerBack = screen === 'discovery' ? discBack : goBack;
+  // The header shows five step numbers at a time, sliding so the current step sits in the middle (two either side).
+  const STEP_WIN = 5, maxWin = STEP_LABELS.length - STEP_WIN;
+  useEffect(() => { setStepWin(Math.max(0, Math.min(stepNum - 3, maxWin))); }, [stepNum, maxWin]);
   const userInitials = initialsOf(sr.current.name === 'there' ? '' : sr.current.name);
   function sevenDayRange(): string {
     const start = new Date(); const end = new Date(); end.setDate(end.getDate()+6);
@@ -808,12 +796,18 @@ export default function DavidModal({ isOpen, onClose }: { isOpen: boolean; onClo
           {canGoBack && <button type="button" className="oi-top-back" onClick={headerBack} aria-label="Back" title="Back"><Ico d={ICONS.back} size={15} sw={2.2} /></button>}
           <div className="oi-top-avatar"><img src={PERSONAL_OI_PHOTO} alt="" /><span className="live-dot"></span></div>
           <div className="david-topbar-text"><strong>Personal OI</strong><span>Your OI Consultant</span></div>
-          <ol className="oi-steps" aria-label={isNextSteps ? 'All steps complete' : 'Step '+stepNum+' of 16: '+STEP_LABELS[stepNum-1]}>
-            {STEP_LABELS.map((l,i) => {
-              const state = isNextSteps || i < stepNum-1 ? 'done' : i === stepNum-1 ? 'current' : '';
-              return <li key={l} className={state} aria-current={state === 'current' ? 'step' : undefined}><button type="button" title={(i+1)+'. '+l} aria-label={'Go to step '+(i+1)+': '+l} onClick={() => goToStep(i+1)}>{i+1}</button></li>;
-            })}
-          </ol>
+          <div className="oi-steps">
+            <button type="button" className="oi-steps-arrow" disabled={stepWin === 0} onClick={() => setStepWin(w => Math.max(0, w - STEP_WIN))} aria-label="Previous steps"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg></button>
+            <div className="oi-steps-view">
+              <ol className="oi-steps-track" style={{ '--win': stepWin } as CSSProperties} aria-label={isNextSteps ? 'All steps complete' : 'Step '+stepNum+' of 16: '+STEP_LABELS[stepNum-1]}>
+                {STEP_LABELS.map((l,i) => {
+                  const state = !isNextSteps && i === stepNum-1 ? 'current' : completed.has(i+1) ? 'done' : '';
+                  return <li key={l} className={state} aria-current={state === 'current' ? 'step' : undefined}><button type="button" tabIndex={i >= stepWin && i < stepWin + STEP_WIN ? 0 : -1} title={(i+1)+'. '+l} aria-label={'Go to step '+(i+1)+': '+l} onClick={() => goToStep(i+1)}>{i+1}</button></li>;
+                })}
+              </ol>
+            </div>
+            <button type="button" className="oi-steps-arrow" disabled={stepWin >= maxWin} onClick={() => setStepWin(w => Math.min(maxWin, w + STEP_WIN))} aria-label="Next steps"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6"/></svg></button>
+          </div>
           {hasSpeech && (
             <button className={'david-voice-toggle'+(voiceOn?' on':'')} type="button" aria-pressed={voiceOn} aria-label={voiceOn ? 'Turn voice off' : 'Turn voice on'} title={voiceOn ? 'Voice on' : 'Voice off'} onClick={() => { setVoiceOn(v => { if (v) { try { speechSynthesis.cancel(); } catch {} } return !v; }); }}>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M11 5L6 9H2v6h4l5 4V5z"/>{voiceOn ? <path d="M19.07 4.93a10 10 0 010 14.14M15.54 8.46a5 5 0 010 7.07"/> : <path d="M23 9l-6 6M17 9l6 6"/>}</svg>
@@ -945,20 +939,17 @@ export default function DavidModal({ isOpen, onClose }: { isOpen: boolean; onClo
                     : <div key={msg.id} className={'david-msg from-'+msg.from}>{(msg as {text:string}).text}</div>
                   )}
                 </div>
-                {continueVisible ? (
-                  <div className="oi-chat-next"><button className="david-continue-btn" type="button" onClick={startMoment}>I&rsquo;ve seen enough &mdash; what&rsquo;s next? &rarr;</button></div>
-                ) : (<>
-                  <div className={'oi-voice'+(listening?' listening':'')}>
-                    <span className="oi-wave">{Array.from({ length: 9 }).map((_,i) => <i key={i}></i>)}</span>
-                    <button type="button" className={'oi-mic'+(!hasRecognition?' unsupported':'')} onClick={toggleMic} aria-label={listening ? 'Stop listening' : 'Speak to David'}><Ico d={ICONS.mic} size={20} sw={2} /></button>
-                    <span className="oi-wave">{Array.from({ length: 9 }).map((_,i) => <i key={i}></i>)}</span>
-                    <div className={'oi-voice-label'+(micMessage?' oi-voice-error':'')}>{micMessage || (listening ? 'David is listening…' : hasRecognition ? 'Tap the mic to talk to David' : 'Voice input not supported here — type below')}</div>
-                  </div>
-                  <div className="oi-ask">
-                    <input type="text" ref={chatInputRef} placeholder="Ask me anything…" onKeyDown={e => { if (e.key==='Enter') sendChat((e.target as HTMLInputElement).value); }} />
-                    <button type="button" onClick={() => sendChat(chatInputRef.current?.value || '')} aria-label="Send"><Ico d={ICONS.arrow} size={16} sw={2.2} /></button>
-                  </div>
-                </>)}
+                <div className={'oi-voice'+(listening?' listening':'')}>
+                  <span className="oi-wave">{Array.from({ length: 9 }).map((_,i) => <i key={i}></i>)}</span>
+                  <button type="button" className={'oi-mic'+(!hasRecognition?' unsupported':'')} onClick={toggleMic} aria-label={listening ? 'Stop listening' : 'Speak to David'}><Ico d={ICONS.mic} size={20} sw={2} /></button>
+                  <span className="oi-wave">{Array.from({ length: 9 }).map((_,i) => <i key={i}></i>)}</span>
+                  <div className={'oi-voice-label'+(micMessage?' oi-voice-error':'')}>{micMessage || (listening ? 'David is listening…' : hasRecognition ? 'Tap the mic to talk to David' : 'Voice input not supported here — type below')}</div>
+                </div>
+                <div className="oi-ask">
+                  <input type="text" ref={chatInputRef} placeholder="Ask me anything…" onKeyDown={e => { if (e.key==='Enter') sendChat((e.target as HTMLInputElement).value); }} />
+                  <button type="button" onClick={() => sendChat(chatInputRef.current?.value || '')} aria-label="Send"><Ico d={ICONS.arrow} size={16} sw={2.2} /></button>
+                </div>
+                {continueVisible && <div className="oi-chat-next"><button className="david-continue-btn" type="button" onClick={startMoment}>I&rsquo;ve seen enough &mdash; what&rsquo;s next? &rarr;</button></div>}
               </div>
             </div>
           </div>
