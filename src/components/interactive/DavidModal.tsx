@@ -738,6 +738,39 @@ export default function DavidModal({ isOpen, onClose }: { isOpen: boolean; onClo
     step();
   }
   function startWelcome() { nav('welcome'); speak('Welcome, '+sr.current.name+". Everything's ready. I'm looking forward to working with you."); }
+  // Header step numbers: jump straight to any step, filling in demo defaults for anything skipped.
+  function goToStep(n: number) {
+    if (n === stepNum && !isNextSteps) return;
+    const backward = n < stepNum;
+    timers.current.forEach(clearTimeout); timers.current = [];
+    try { recogRef.current?.stop(); } catch {}
+    try { if (hasSpeech) speechSynthesis.cancel(); } catch {}
+    if (n >= 3 && !sr.current.mockBusiness) {
+      const ind = sr.current.industry || 'Professional Services';
+      sr.current.industry = ind; sr.current.mockBusiness = MOCK_BUSINESSES[ind] || MOCK_BUSINESSES['Professional Services']; setSelIndustry(ind);
+    }
+    if (n >= 5 && !sr.current.position) { sr.current.position = POSITION_OPTIONS[0]; setSelRole(POSITION_OPTIONS[0]); }
+    if (n >= 11) populateWorkforce();
+    switch (n) {
+      case 1: nav('intro'); break;
+      case 2: nav('industry'); break;
+      case 3: nav('business-intro'); break;
+      case 4: nav('role'); break;
+      case 5: nav('chat'); if (!chatMsgs.length) startChat(); break;
+      case 6: if (sr.current.momentStarted) { nav('moment'); setMomentCount(MOMENT_LINES.length); } else startMoment(); break;
+      case 7: nav('offer'); break;
+      case 8: if (orgStage === 'searching') setOrgStage('form'); nav('company'); break;
+      case 9: startDiscovery(); break;
+      case 10: startCapacityReport(); break;
+      case 11: startSevenDay(); break;
+      case 12: startWhatHappened(); break;
+      case 13: startValueReport(); break;
+      case 14: startBuildWorkforce(); break;
+      case 15: nav('pricing'); break;
+      case 16: startWelcome(); break;
+    }
+    if (backward) setSlideDir('back');
+  }
   function startPersonalise() { setVoiceGender(''); setAvatarPhotoSel(null); setPersonalName(''); setPersonalStyle(''); setShowAvatarSection(false); nav('personalise'); }
 
   const totalOI = workforceSelection.reduce((s,n) => s+calcMonthly(n), 0);
@@ -778,7 +811,7 @@ export default function DavidModal({ isOpen, onClose }: { isOpen: boolean; onClo
           <ol className="oi-steps" aria-label={isNextSteps ? 'All steps complete' : 'Step '+stepNum+' of 16: '+STEP_LABELS[stepNum-1]}>
             {STEP_LABELS.map((l,i) => {
               const state = isNextSteps || i < stepNum-1 ? 'done' : i === stepNum-1 ? 'current' : '';
-              return <li key={l} className={state} title={(i+1)+'. '+l} aria-current={state === 'current' ? 'step' : undefined}>{i+1}</li>;
+              return <li key={l} className={state} aria-current={state === 'current' ? 'step' : undefined}><button type="button" title={(i+1)+'. '+l} aria-label={'Go to step '+(i+1)+': '+l} onClick={() => goToStep(i+1)}>{i+1}</button></li>;
             })}
           </ol>
           {hasSpeech && (
