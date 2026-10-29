@@ -1,5 +1,6 @@
 'use client';
 import { useState, useRef, useEffect, type CSSProperties } from 'react';
+import { searchOrgWebsites, type OrgResult } from '@/lib/orgSearch';
 import { IMAGES } from '@/lib/images';
 import { useBodyScrollLock } from '@/hooks/useBodyScrollLock';
 
@@ -68,11 +69,10 @@ const DISCOVERY_QUESTIONS: DiscoveryQuestion[] = [
   { key: 'goals', multi: true, text: 'What are your main goals right now?', options: ['Grow revenue','Improve operational efficiency','Improve customer service','Reduce costs','Improve compliance and risk management',OTHER_OPTION] },
   { key: 'challenges', multi: true, text: 'What are your biggest challenges?', options: ['Finding information','Too many tools and systems','Manual and repetitive work','Slow decision-making','Team capacity and workload','Keeping knowledge when people leave',OTHER_OPTION] },
   { key: 'whoUses', multi: false, text: 'Who will be using OI?', options: ['Just me','A small team (1–10 people)','Multiple teams (11–50 people)','Most of the organisation (51–250 people)','Entire organisation (250+ people)','Not sure yet'] },
-  { key: 'tools', multi: true, text: 'What systems and tools do you currently use?', options: ['Microsoft 365','Google Workspace','Slack','Teams','Salesforce','HubSpot','Xero','SAP','Notion','Jira',OTHER_OPTION,"We don't use many tools yet"] },
+  { key: 'tools', multi: true, text: 'What systems and tools do you currently use?', options: ['Microsoft 365','Google Workspace','Slack','Teams','Salesforce','HubSpot','Xero','SAP','Notion','Jira','Outlook','Microsoft Calendar','Teams Meetings','SharePoint','Gmail','Google Meet','Zoom','Dropbox','Workday','Odoo ERP','ERPNext','hyphenOne','OI Pro','IMAP / Custom',OTHER_OPTION,"We don't use many tools yet"] },
   { key: 'infoManagement', multi: true, text: 'How do you currently manage information?', options: ['Emails','Shared drives (e.g. OneDrive, Google Drive)','Documents and folders','CRM or business systems','Team chat (e.g. Teams, Slack, WhatsApp)','Individual files and spreadsheets',"Not sure / it's spread across multiple places"] },
   { key: 'workTypes', multi: true, text: 'What type of work would you like OI to help with?', options: ['Research and analysis','Meetings and follow-up','Document creation and management','Project and task management','Customer and stakeholder support','Data and reporting','Process improvement and automation','Compliance and risk',OTHER_OPTION] },
   { key: 'successLooks', multi: true, text: 'What does success look like for you?', options: ['Save time and reduce manual work','Improve decision-making','Increase productivity and capacity','Better customer experience','Reduce costs','Stronger compliance and governance',OTHER_OPTION] },
-  { key: 'timeline', multi: false, text: 'When would you like to get started?', options: ['As soon as possible','Within the next 1–3 months','Within 3–6 months','Later this year','Just exploring for now'] },
   { key: 'notes', freeText: true, text: 'Anything else I should know?', placeholder: "Is there anything you'd like to share about your organisation, plans or the challenges you're facing?" },
 ];
 const DEFAULT_HOOK = { driverName: 'Knowledge Capture', question: "How much of your team's best thinking is captured somewhere reusable?", options: [{ text: 'Well captured and reusable', level: 2, why: 'Strong knowledge capture is a real asset.' },{ text: 'Some of it, not consistently', level: 1, why: 'Partial capture is common at this stage.' },{ text: 'Mostly known only by individuals', level: 0, why: 'Knowledge concentrated in individuals is the most common risk at this size.' },{ text: 'Not sure', level: 0, why: 'Worth mapping directly.' }] };
@@ -159,7 +159,6 @@ const WELCOME_CHECKLIST = ['Confirm your package','Set up your OI Consultants','
 const WELCOME_TIMELINE = [
   { when: 'Today', text: 'Confirm your order and complete onboarding' },
   { when: 'Within 24 hours', text: 'Set up your OI Consultants and integrations' },
-  { when: 'Within 3 days', text: 'Your OI Workforce is fully working with you' },
   { when: 'Ongoing', text: 'Review progress and add more OI Consultants' },
 ];
 const LOADING_LINES = ["I'm creating your organisation…","I'm preparing your departments…","I'm setting up your Organisation Memory…","I'm preparing your Executive Office…","I'm creating your first OI Consultants…","I'm setting you up on secure cloud…","I'm getting everything ready…"];
@@ -180,7 +179,6 @@ const WORKFORCE_LIBRARY: Record<string, { title: string; color: string; benchmar
   'Elizabeth Turner': { title: 'Executive OI', color: '#1D5FD4', benchmark: 55000, reason: 'Board packs, minutes and decision registers, ready before the meeting starts.' },
   'Yaw Darko': { title: 'Quality OI', color: '#267A76', benchmark: 42000, reason: 'Tracks defect patterns across production lines and flags them before they reach a customer.' },
 };
-const OI_PRICING_PCT = 0.20;
 const INDUSTRY_WORKFORCE: Record<string, string[]> = {
   Banking: ['Elizabeth Turner','Kwame Asante','Funmilayo Adeyemi','Kofi Boateng'],
   FMCG: ['Elizabeth Turner','Chidinma Okafor','Abena Owusu','Kofi Boateng'],
@@ -299,18 +297,17 @@ const QUESTION_ICONS: Record<string, string> = {
   'Process improvement and automation': ICONS.gear, 'Compliance and risk': ICONS.shield,
   'Save time and reduce manual work': ICONS.bolt, 'Improve decision-making': ICONS.lightbulb, 'Increase productivity and capacity': ICONS.chart,
   'Better customer experience': ICON_HEART_PEOPLE, 'Reduce costs': ICON_COINS, 'Stronger compliance and governance': ICONS.shield,
-  'As soon as possible': ICONS.bolt, 'Within the next 1–3 months': ICONS.calendar, 'Within 3–6 months': ICONS.calendar,
-  'Later this year': ICONS.calendar, 'Just exploring for now': ICONS.search,
   [OTHER_OPTION]: ICON_OTHER,
 };
-const WHOUSES_PHOTOS: Record<string, string> = {
-  'Just me': IMAGES.avatarConsult2,
-  'A small team (1–10 people)': IMAGES.avatarConsult4,
-  'Multiple teams (11–50 people)': IMAGES.avatarConsult7,
-  'Most of the organisation (51–250 people)': IMAGES.avatarConsult9,
-  'Entire organisation (250+ people)': IMAGES.avatarConsult11,
+// More people → more faces: 1 for "Just me", up to 4 for the larger groups.
+const WHOUSES_PHOTOS: Record<string, string[]> = {
+  'Just me': [IMAGES.avatarConsult2],
+  'A small team (1–10 people)': [IMAGES.avatarConsult4, IMAGES.avatarConsult5],
+  'Multiple teams (11–50 people)': [IMAGES.avatarConsult7, IMAGES.avatarConsult1, IMAGES.avatarConsult8],
+  'Most of the organisation (51–250 people)': [IMAGES.avatarConsult9, IMAGES.avatarConsult3, IMAGES.avatarConsult10, IMAGES.avatarConsult6],
+  'Entire organisation (250+ people)': [IMAGES.avatarConsult11, IMAGES.avatarConsult12, IMAGES.avatarConsult13, IMAGES.avatarConsult14],
 };
-// Real brand marks for the tools question (Simple Icons, CC0; Microsoft and Teams drawn by hand). [fill, path] pairs on a 24×24 grid.
+// Real brand marks for the tools question (Simple Icons, CC0; Microsoft, Teams, Workday, calendar, hyphenOne, OI Pro and IMAP drawn by hand). [fill, path] pairs on a 24×24 grid.
 const BRAND_PATHS: Record<string, [string, string][]> = {
   "Slack": [['#E01E5A', 'M5.042 15.165a2.528 2.528 0 0 1-2.52 2.523A2.528 2.528 0 0 1 0 15.165a2.527 2.527 0 0 1 2.522-2.52h2.52v2.52zM6.313 15.165a2.527 2.527 0 0 1 2.521-2.52 2.527 2.527 0 0 1 2.521 2.52v6.313A2.528 2.528 0 0 1 8.834 24a2.528 2.528 0 0 1-2.521-2.522v-6.313z'], ['#36C5F0', 'M8.834 5.042a2.528 2.528 0 0 1-2.521-2.52A2.528 2.528 0 0 1 8.834 0a2.528 2.528 0 0 1 2.521 2.522v2.52H8.834zM8.834 6.313a2.528 2.528 0 0 1 2.521 2.521 2.528 2.528 0 0 1-2.521 2.521H2.522A2.528 2.528 0 0 1 0 8.834a2.528 2.528 0 0 1 2.522-2.521h6.312z'], ['#2EB67D', 'M18.956 8.834a2.528 2.528 0 0 1 2.522-2.521A2.528 2.528 0 0 1 24 8.834a2.528 2.528 0 0 1-2.522 2.521h-2.522V8.834zM17.688 8.834a2.528 2.528 0 0 1-2.523 2.521 2.527 2.527 0 0 1-2.52-2.521V2.522A2.527 2.527 0 0 1 15.165 0a2.528 2.528 0 0 1 2.523 2.522v6.312z'], ['#ECB22E', 'M15.165 18.956a2.528 2.528 0 0 1 2.523 2.522A2.528 2.528 0 0 1 15.165 24a2.527 2.527 0 0 1-2.52-2.522v-2.522h2.52zM15.165 17.688a2.527 2.527 0 0 1-2.52-2.523 2.526 2.526 0 0 1 2.52-2.52h6.313A2.527 2.527 0 0 1 24 15.165a2.528 2.528 0 0 1-2.522 2.523h-6.313z']],
   "Salesforce": [['#00A1E0', 'M10.006 5.415a4.195 4.195 0 013.045-1.306c1.56 0 2.954.9 3.69 2.205.63-.3 1.35-.45 2.1-.45 2.85 0 5.159 2.34 5.159 5.22s-2.31 5.22-5.176 5.22c-.345 0-.69-.044-1.02-.104a3.75 3.75 0 01-3.3 1.95c-.6 0-1.155-.15-1.65-.375A4.314 4.314 0 018.88 20.4a4.302 4.302 0 01-4.05-2.82c-.27.062-.54.076-.825.076-2.204 0-4.005-1.8-4.005-4.05 0-1.5.811-2.805 2.01-3.51-.255-.57-.39-1.2-.39-1.846 0-2.58 2.1-4.65 4.65-4.65 1.53 0 2.85.705 3.72 1.8']],
@@ -319,6 +316,14 @@ const BRAND_PATHS: Record<string, [string, string][]> = {
   "SAP": [['#0FAAFF', 'M0 6.064v11.872h12.13L24 6.064zm3.264 2.208h.005c.863.001 1.915.245 2.676.633l-.82 1.43c-.835-.404-1.255-.442-1.73-.467-.708-.038-1.064.215-1.069.488-.007.332.669.633 1.305.838.964.306 2.19.715 2.377 1.9L7.77 8.437h2.046l2.064 5.576-.007-5.575h2.37c2.257 0 3.318.764 3.318 2.519 0 1.575-1.09 2.514-2.936 2.514h-.763l-.01 2.094-3.588-.003-.25-.908c-.37.122-.787.189-1.23.189-.456 0-.885-.071-1.263-.2l-.358.919-2 .006.09-.462c-.029.025-.057.05-.087.074-.535.43-1.208.629-2.037.644l-.213.002a5.075 5.075 0 0 1-2.581-.675l.73-1.448c.79.467 1.286.572 1.956.558.347-.007.598-.07.761-.239a.557.557 0 0 0 .156-.369c.007-.376-.53-.553-1.185-.756-.531-.164-1.135-.389-1.606-.735-.559-.41-.825-.924-.812-1.65a1.99 1.99 0 0 1 .566-1.377c.519-.537 1.357-.863 2.363-.863zm10.597 1.67v1.904h.521c.694 0 1.247-.23 1.248-.964 0-.709-.554-.94-1.248-.94zm-5.087.767l-.748 2.362c.223.085.481.133.757.133.268 0 .52-.047.742-.126l-.736-2.37z']],
   "Notion": [['#000000', 'M4.459 4.208c.746.606 1.026.56 2.428.466l13.215-.793c.28 0 .047-.28-.046-.326L17.86 1.968c-.42-.326-.981-.7-2.055-.607L3.01 2.295c-.466.046-.56.28-.374.466zm.793 3.08v13.904c0 .747.373 1.027 1.214.98l14.523-.84c.841-.046.935-.56.935-1.167V6.354c0-.606-.233-.933-.748-.887l-15.177.887c-.56.047-.747.327-.747.933zm14.337.745c.093.42 0 .84-.42.888l-.7.14v10.264c-.608.327-1.168.514-1.635.514-.748 0-.935-.234-1.495-.933l-4.577-7.186v6.952L12.21 19s0 .84-1.168.84l-3.222.186c-.093-.186 0-.653.327-.746l.84-.233V9.854L7.822 9.76c-.094-.42.14-1.026.793-1.073l3.456-.233 4.764 7.279v-6.44l-1.215-.139c-.093-.514.28-.887.747-.933zM1.936 1.035l13.31-.98c1.634-.14 2.055-.047 3.082.7l4.249 2.986c.7.513.934.653.934 1.213v16.378c0 1.026-.373 1.634-1.68 1.726l-15.458.934c-.98.047-1.448-.093-1.962-.747l-3.129-4.06c-.56-.747-.793-1.306-.793-1.96V2.667c0-.839.374-1.54 1.447-1.632z']],
   "Jira": [['#0052CC', 'M11.571 11.513H0a5.218 5.218 0 0 0 5.232 5.215h2.13v2.057A5.215 5.215 0 0 0 12.575 24V12.518a1.005 1.005 0 0 0-1.005-1.005zm5.723-5.756H5.736a5.215 5.215 0 0 0 5.215 5.214h2.129v2.058a5.218 5.218 0 0 0 5.215 5.214V6.758a1.001 1.001 0 0 0-1.001-1.001zM23.013 0H11.455a5.215 5.215 0 0 0 5.215 5.215h2.129v2.057A5.215 5.215 0 0 0 24 12.483V1.005A1.001 1.001 0 0 0 23.013 0Z']],
+  "Outlook": [['#0078D4', 'M7.88 12.04q0 .45-.11.87-.1.41-.33.74-.22.33-.58.52-.37.2-.87.2t-.85-.2q-.35-.21-.57-.55-.22-.33-.33-.75-.1-.42-.1-.86t.1-.87q.1-.43.34-.76.22-.34.59-.54.36-.2.87-.2t.86.2q.35.21.57.55.22.34.31.77.1.43.1.88zM24 12v9.38q0 .46-.33.8-.33.32-.8.32H7.13q-.46 0-.8-.33-.32-.33-.32-.8V18H1q-.41 0-.7-.3-.3-.29-.3-.7V7q0-.41.3-.7Q.58 6 1 6h6.5V2.55q0-.44.3-.75.3-.3.75-.3h12.9q.44 0 .75.3.3.3.3.75V10.85l1.24.72h.01q.1.07.18.18.07.12.07.25zm-6-8.25v3h3v-3zm0 4.5v3h3v-3zm0 4.5v1.83l3.05-1.83zm-5.25-9v3h3.75v-3zm0 4.5v3h3.75v-3zm0 4.5v2.03l2.41 1.5 1.34-.8v-2.73zM9 3.75V6h2l.13.01.12.04v-2.3zM5.98 15.98q.9 0 1.6-.3.7-.32 1.19-.86.48-.55.73-1.28.25-.74.25-1.61 0-.83-.25-1.55-.24-.71-.71-1.24t-1.15-.83q-.68-.3-1.55-.3-.92 0-1.64.3-.71.3-1.2.85-.5.54-.75 1.3-.25.74-.25 1.63 0 .85.26 1.56.26.72.74 1.23.48.52 1.17.81.69.3 1.56.3zM7.5 21h12.39L12 16.08V17q0 .41-.3.7-.29.3-.7.3H7.5zm15-.13v-7.24l-5.9 3.54Z']],
+  "SharePoint": [['#0078D4', 'M24 13.5q0 1.242-.475 2.332-.474 1.09-1.289 1.904-.814.815-1.904 1.29-1.09.474-2.332.474-.762 0-1.523-.2-.106.997-.557 1.858-.451.862-1.154 1.494-.704.633-1.606.99-.902.358-1.91.358-1.09 0-2.045-.416-.955-.416-1.664-1.125-.709-.709-1.125-1.664Q6 19.84 6 18.75q0-.188.018-.375.017-.188.04-.375H.997q-.41 0-.703-.293T0 17.004V6.996q0-.41.293-.703T.996 6h3.54q.14-1.277.726-2.373.586-1.096 1.488-1.904Q7.652.914 8.807.457 9.96 0 11.25 0q1.395 0 2.625.533T16.02 1.98q.914.915 1.447 2.145T18 6.75q0 .188-.012.375-.011.188-.035.375 1.242 0 2.344.469 1.101.468 1.928 1.277.826.809 1.3 1.904Q24 12.246 24 13.5zm-12.75-12q-.973 0-1.857.34-.885.34-1.577.943-.691.604-1.154 1.43Q6.2 5.039 6.06 6h4.945q.41 0 .703.293t.293.703v4.945l.21-.035q.212-.75.61-1.424.399-.673.944-1.218.545-.545 1.213-.944.668-.398 1.43-.61.093-.503.093-.96 0-1.09-.416-2.045-.416-.955-1.125-1.664-.709-.709-1.664-1.125Q12.34 1.5 11.25 1.5zM6.117 15.902q.54 0 1.06-.111.522-.111.932-.37.41-.257.662-.679.252-.422.252-1.055 0-.632-.263-1.054-.264-.422-.662-.703-.399-.282-.856-.463l-.855-.34q-.399-.158-.662-.334-.264-.176-.264-.445 0-.2.14-.323.141-.123.335-.193.193-.07.404-.094.21-.023.351-.023.598 0 1.055.152.457.153.95.457V8.543q-.282-.082-.522-.14-.24-.06-.475-.1-.234-.041-.486-.059-.252-.017-.557-.017-.515 0-1.054.117-.54.117-.979.375-.44.258-.715.68-.275.421-.275 1.03 0 .598.263.997.264.398.663.68.398.28.855.474l.856.363q.398.17.662.358.263.187.263.457 0 .222-.123.351-.123.13-.31.2-.188.07-.393.087-.205.018-.369.018-.703 0-1.248-.234-.545-.235-1.107-.621v1.875q1.195.468 2.472.468zM11.25 22.5q.773 0 1.453-.293t1.19-.803q.51-.51.808-1.195.299-.686.299-1.459 0-.668-.223-1.277-.222-.61-.62-1.096-.4-.486-.95-.826-.55-.34-1.207-.48v1.933q0 .41-.293.703t-.703.293H7.57q-.07.375-.07.75 0 .773.293 1.459t.803 1.195q.51.51 1.195.803.686.293 1.459.293zM18 18q.926 0 1.746-.352.82-.351 1.436-.966.615-.616.966-1.43.352-.815.352-1.752 0-.926-.352-1.746-.351-.82-.966-1.436-.616-.615-1.436-.966Q18.926 9 18 9t-1.74.357q-.815.358-1.43.973t-.973 1.43q-.357.814-.357 1.74 0 .129.006.258t.017.258q.551.27 1.02.65t.838.855q.369.475.627 1.026.258.55.387 1.148Q17.18 18 18 18Z']],
+  "Gmail": [['#EA4335', 'M24 5.457v13.909c0 .904-.732 1.636-1.636 1.636h-3.819V11.73L12 16.64l-6.545-4.91v9.273H1.636A1.636 1.636 0 0 1 0 19.366V5.457c0-2.023 2.309-3.178 3.927-1.964L5.455 4.64 12 9.548l6.545-4.91 1.528-1.145C21.69 2.28 24 3.434 24 5.457z']],
+  "Google Meet": [['#00897B', 'M5.53 2.13 0 7.75h5.53zm.398 0v5.62h7.608v3.65l5.47-4.45c-.014-1.22.031-2.25-.025-3.46-.148-1.09-1.287-1.47-2.236-1.36zM23.1 4.32c-.802.295-1.358.995-2.047 1.49-2.506 2.05-4.982 4.12-7.468 6.19 3.025 2.59 6.04 5.18 9.065 7.76 1.218.671 1.428-.814 1.328-1.64v-13a.828.828 0 0 0-.877-.825zM.038 8.15v7.7h5.53v-7.7zm13.577 8.1H6.008v5.62c3.864-.006 7.737.011 11.58-.009 1.02-.07 1.618-1.12 1.468-2.07v-2.51l-5.47-4.68v3.65zm-13.577 0c.02 1.44-.041 2.88.033 4.31.162.948 1.158 1.43 2.047 1.31h3.464v-5.62z']],
+  "Zoom": [['#0B5CFF', 'M5.033 14.649H.743a.74.74 0 0 1-.686-.458.74.74 0 0 1 .16-.808L3.19 10.41H1.06A1.06 1.06 0 0 1 0 9.35h3.957c.301 0 .57.18.686.458a.74.74 0 0 1-.161.808L1.51 13.59h2.464c.585 0 1.06.475 1.06 1.06zM24 11.338c0-1.14-.927-2.066-2.066-2.066-.61 0-1.158.265-1.537.686a2.061 2.061 0 0 0-1.536-.686c-1.14 0-2.066.926-2.066 2.066v3.311a1.06 1.06 0 0 0 1.06-1.06v-2.251a1.004 1.004 0 0 1 2.013 0v2.251c0 .586.474 1.06 1.06 1.06v-3.311a1.004 1.004 0 0 1 2.012 0v2.251c0 .586.475 1.06 1.06 1.06zM16.265 12a2.728 2.728 0 1 1-5.457 0 2.728 2.728 0 0 1 5.457 0zm-1.06 0a1.669 1.669 0 1 0-3.338 0 1.669 1.669 0 0 0 3.338 0zm-4.82 0a2.728 2.728 0 1 1-5.458 0 2.728 2.728 0 0 1 5.457 0zm-1.06 0a1.669 1.669 0 1 0-3.338 0 1.669 1.669 0 0 0 3.338 0z']],
+  "Dropbox": [['#0061FF', 'M6 1.807L0 5.629l6 3.822 6.001-3.822L6 1.807zM18 1.807l-6 3.822 6 3.822 6-3.822-6-3.822zM0 13.274l6 3.822 6.001-3.822L6 9.452l-6 3.822zM18 9.452l-6 3.822 6 3.822 6-3.822-6-3.822zM6 18.371l6.001 3.822 6-3.822-6-3.822L6 18.371z']],
+  "Odoo ERP": [['#714B67', 'M21.1002 15.7957c-1.6015 0-2.8997-1.2983-2.8997-2.8998s1.2983-2.8997 2.8997-2.8997c1.6015 0 2.8998 1.2982 2.8998 2.8997 0 1.5999-1.2979 2.8998-2.8998 2.8998zm0-1.2c.9388.0006 1.7003-.7601 1.7008-1.6989.0004-.9388-.7602-1.7003-1.699-1.7007h-.0018c-.9388.0004-1.6994.7619-1.699 1.7007.0005.9381.761 1.6985 1.699 1.699zm-6.0655 1.2c-1.6014 0-2.8997-1.2983-2.8997-2.8998s1.2983-2.8997 2.8997-2.8997c1.6015 0 2.8998 1.2982 2.8998 2.8997 0 1.5999-1.2999 2.8998-2.8998 2.8998zm0-1.2c.9389.0006 1.7003-.7601 1.7008-1.6989.0005-.9388-.7602-1.7003-1.699-1.7007h-.0018c-.9388.0004-1.6994.7619-1.699 1.7007.0005.9381.761 1.6985 1.699 1.699zM11.865 12.858c0 1.6199-1.2979 2.9378-2.8977 2.9378s-2.8998-1.314-2.8998-2.9358 1.1799-2.8597 2.8998-2.8597c.6359 0 1.2239.134 1.6998.484v-1.68a.6.6 0 0 1 1.2 0v4.0537h-.002zm-2.8977 1.7399c.9388.0005 1.7002-.7602 1.7007-1.699.0005-.9388-.7602-1.7003-1.699-1.7007h-.0017c-.9389.0004-1.6995.7619-1.699 1.7007.0004.9381.7608 1.6985 1.699 1.699zm-6.0675 1.1979C1.2983 15.7957 0 14.4974 0 12.8959s1.2983-2.8997 2.8998-2.8997 2.8997 1.2982 2.8997 2.8997c0 1.5999-1.2999 2.8998-2.8997 2.8998zm0-1.2c.9388.0006 1.7002-.7601 1.7007-1.699.0005-.9387-.7602-1.7002-1.699-1.7006h-.0017c-.9388.0004-1.6995.7619-1.699 1.7007.0004.9381.7608 1.6985 1.699 1.699z']],
+  "ERPNext": [['#0089FF', 'M2.88 0C1.29 0 0 1.29 0 2.88v18.24C0 22.71 1.29 24 2.88 24h18.24c1.59 0 2.88-1.29 2.88-2.88V2.88C24 1.29 22.71 0 21.12 0Zm5.04 5.76h8.254v2.146H7.92Zm0 5.033h7.85v2.146h-5.233v2.954h5.703v2.146H7.92Z']],
 };
 const TOOL_ICONS: Record<string, string> = {
   [OTHER_OPTION]: '<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4z"/>',
@@ -339,11 +344,40 @@ function BrandLogo({ name }: { name: string }) {
       <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z" />
     </svg>
   );
-  if (name === 'Teams') return (
+  if (name === 'Teams' || name === 'Teams Meetings') return (
     <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true">
       <circle cx="19.2" cy="6.6" r="2.4" fill="#7B83EB" /><rect x="15.6" y="10" width="7.4" height="8.6" rx="2.6" fill="#7B83EB" />
       <circle cx="13" cy="5.4" r="3" fill="#5059C9" /><rect x="8.6" y="9.4" width="9.6" height="11" rx="3" fill="#5059C9" />
       <rect x="1" y="6.5" width="12" height="12" rx="2" fill="#4B53BC" /><path d="M4 9.5h6v1.8H7.9V16H6.1v-4.7H4z" fill="#fff" />
+    </svg>
+  );
+  if (name === 'Microsoft Calendar') return (
+    <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true">
+      <rect x="2" y="4" width="20" height="18" rx="2.5" fill="#0078D4" /><rect x="2" y="4" width="20" height="5" rx="2.5" fill="#0358A7" />
+      <rect x="6" y="2" width="2.2" height="5" rx="1.1" fill="#0358A7" /><rect x="15.8" y="2" width="2.2" height="5" rx="1.1" fill="#0358A7" />
+      <path d="M6 12h3v3H6zM10.5 12h3v3h-3zM15 12h3v3h-3zM6 16.5h3v3H6zM10.5 16.5h3v3h-3z" fill="#fff" />
+    </svg>
+  );
+  if (name === 'Workday') return (
+    <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M5.5 9.5a6.5 6.5 0 0113 0" fill="none" stroke="#F38B00" strokeWidth="2.2" strokeLinecap="round" />
+      <path d="M2.5 12.5l3.2 9 3.3-7 3 7 3-7 3.3 7 3.2-9" fill="none" stroke="#0875E1" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+  if (name === 'hyphenOne') return (
+    <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true">
+      <rect width="24" height="24" rx="5" fill="#001B5C" />
+      <text x="12" y="16.2" textAnchor="middle" fontFamily="Manrope,sans-serif" fontWeight="800" fontSize="11" fill="#fff">h<tspan fill="#5BB0F0">1</tspan></text>
+    </svg>
+  );
+  if (name === 'OI Pro') return (
+    <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true">
+      <text x="12" y="18" textAnchor="middle" fontFamily="Manrope,sans-serif" fontWeight="800" fontSize="17" letterSpacing="-1" fill="#001B5C">OI</text>
+    </svg>
+  );
+  if (name === 'IMAP / Custom') return (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#5B6475" strokeWidth="1.8" strokeLinejoin="round" aria-hidden="true">
+      <rect x="2.5" y="5" width="19" height="14" rx="2" /><path d="M3 6.5l9 6.5 9-6.5" />
     </svg>
   );
   const parts = BRAND_PATHS[name]; if (!parts) return null;
@@ -351,12 +385,12 @@ function BrandLogo({ name }: { name: string }) {
 }
 const SHELL_NAV: [string, string][] = [['My OI', ICONS.myoi],['Command Centre', ICONS.grid],['Projects', ICONS.folder],['Work', ICONS.briefcase],['Documents', ICONS.file],['People', ICONS.people],['Meetings', ICONS.calendar],['Knowledge Bank', ICONS.book],['More', ICONS.more]];
 
-const STEP_LABELS = ['Meet','Play with','We create','Choose role','My OI (Demo)','Imagine if','Work together','Tell us','Quick questions','Your report','7-Day Experience','What happened','Value report','Workforce','Investment','Welcome'];
+const STEP_LABELS = ['Meet','Play with','We create','Choose role','My OI (Demo)','Imagine if','Work together','Tell us','Quick questions','Your report','Welcome'];
 const TRANSIENT_SCREENS = new Set(['connecting', 'loading']);
 const SCREEN_STEP: Record<string, number> = {
   intro: 1, industry: 2, 'business-intro': 3, role: 4, connecting: 5, chat: 5, moment: 6, offer: 7, arrange: 7,
   company: 8, discovery: 9, report: 10, 'capacity-report': 10,
-  '7day-start': 11, 'what-happened': 12, 'value-report': 13, 'build-workforce': 14, pricing: 15, welcome: 16,
+  welcome: 11,
 };
 
 // Helpers
@@ -376,14 +410,6 @@ function initialsOf(name: string): string { return name.split(/\s+/).filter(Bool
 function Ico({ d, size = 18, sw = 1.8 }: { d: string; size?: number; sw?: number }) {
   return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={sw} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" dangerouslySetInnerHTML={{ __html: d }} />;
 }
-function ConsultantHead() {
-  return (
-    <div className="oi-consultant">
-      <img src={PERSONAL_OI_PHOTO} alt="" />
-      <div><strong>Personal OI</strong><span>Your OI Consultant</span></div>
-    </div>
-  );
-}
 function CheckDot({ i }: { i: number }) {
   return <span className="oi-check-dot" style={{ background:BRIEF_COLORS[i % BRIEF_COLORS.length] }}><Ico d={ICONS.check} size={10} sw={3} /></span>;
 }
@@ -400,13 +426,18 @@ export default function DavidModal({ isOpen, onClose }: { isOpen: boolean; onClo
   const [selRole, setSelRole] = useState('');
   const [chatMsgs, setChatMsgs] = useState<ChatMsg[]>([]);
   const [continueVisible, setContinueVisible] = useState(false);
+  const [askLocked, setAskLocked] = useState(false);
   const [listening, setListening] = useState(false);
   const [micMessage, setMicMessage] = useState('');
   const [connectingText, setConnectingText] = useState('Connecting you to a demonstration organisation…');
   const [momentCount, setMomentCount] = useState(0);
   const [invite, setInvite] = useState({ name: '', email: '', sent: false });
   const [company, setCompany] = useState({ company: '', website: '', email: '', industry: '', country: '', size: '', role: '', none: false });
-  const [orgStage, setOrgStage] = useState<'form' | 'searching' | 'found'>('form');
+  const [orgStage, setOrgStage] = useState<'form' | 'searching' | 'pick' | 'none' | 'found'>('form');
+  const [orgResults, setOrgResults] = useState<OrgResult[]>([]);
+  const orgSearchId = useRef(0);
+  const pickedSite = useRef('');
+  const [orgPick, setOrgPick] = useState<OrgResult | null>(null);
   const [orgPct, setOrgPct] = useState(0);
   const [discIdx, setDiscIdx] = useState(0);
   const [discSel, setDiscSel] = useState<string[]>([]);
@@ -414,7 +445,7 @@ export default function DavidModal({ isOpen, onClose }: { isOpen: boolean; onClo
   const [loadingLine, setLoadingLine] = useState('');
   const [loadingPct, setLoadingPct] = useState(0);
   const [workforceSelection, setWorkforceSelection] = useState<string[]>([]);
-  const [currency, setCurrency] = useState<Currency>('USD');
+  const [currency] = useState<Currency>('USD');
   const [voiceGender, setVoiceGender] = useState('');
   const [avatarPhotoSel, setAvatarPhotoSel] = useState<string | null>(null);
   const [personalName, setPersonalName] = useState('');
@@ -531,7 +562,7 @@ export default function DavidModal({ isOpen, onClose }: { isOpen: boolean; onClo
     const name = sr.current.name && sr.current.name !== 'there' ? ', '+sr.current.name : '';
     const greeting = 'Good '+timeOfDay()+name+'. How can I help you today?';
     msgId.current++; setChatMsgs([{ id: msgId.current, from: 'david', text: greeting }]);
-    speak(greeting); sr.current.chatCount = 0; setContinueVisible(false);
+    speak(greeting); sr.current.chatCount = 0; setContinueVisible(false); setAskLocked(false);
   }
   function sendChat(text: string) {
     const trimmed = text.trim(); if (!trimmed) return;
@@ -542,13 +573,13 @@ export default function DavidModal({ isOpen, onClose }: { isOpen: boolean; onClo
     const main = RESPONSES.find(r => !sr.current.usedResponses.has(r.prompt) && r.trigger.some(t => looseMatch(t, lower)));
     const fup = !main ? FOLLOWUPS.find(r => r.trigger.some(t => looseMatch(t, lower))) : null;
     const match = main || fup;
+    if (main) sr.current.usedResponses.add(main.prompt);
     later(() => {
       if (!match) {
         const fallback = "As this is a demo, I don't have that information right now, but let me share something else with you.";
         setChatMsgs(prev => prev.filter(m => m.id !== thinkId).concat({ id: ++msgId.current, from: 'david', text: fallback }));
         speak(fallback); later(startMoment, 1800); return;
       }
-      if (main) sr.current.usedResponses.add(main.prompt);
       sr.current.chatCount++;
       setChatMsgs(prev => prev.filter(m => m.id !== thinkId).concat({ id: ++msgId.current, from: 'david', text: match.reply }));
       speak(match.reply);
@@ -592,12 +623,25 @@ export default function DavidModal({ isOpen, onClose }: { isOpen: boolean; onClo
   }
 
   // ── Step 8: find the organisation ──
+  // No website given: search the web (OpenAI) and let them pick from up to 3 sites.
   function startOrgSearch() {
+    const id = ++orgSearchId.current;
+    const lookup = company.none || company.website.trim() ? null : searchOrgWebsites(company.company.trim(), company.country);
     setOrgStage('searching'); setOrgPct(0); let idx = 0; const steps = 5;
-    function step() { idx++; setOrgPct(Math.round((idx/steps)*100)); if (idx>=steps) { later(() => setOrgStage('found'), 350); return; } later(step, 320); }
+    function done() {
+      if (!lookup) { setOrgStage('found'); return; }
+      lookup.then(results => {
+        if (id !== orgSearchId.current) return;
+        setOrgResults(results); setOrgStage(results.length ? 'pick' : 'none');
+      });
+    }
+    function step() { idx++; setOrgPct(Math.min(95, Math.round((idx/steps)*100))); if (idx>=steps) { later(done, 350); return; } later(step, 320); }
     step();
   }
-  function orgTryAgain() { setOrgStage('form'); }
+  function pickOrgResult(r: OrgResult) { pickedSite.current = r.link; setOrgPick(r); setCompany(c => ({ ...c, website: r.link })); setOrgStage('found'); }
+  // A website filled in from search results belongs to that name: clear it when the name changes so the next name is searched.
+  function setOrgName(name: string) { setOrgPick(null); setCompany(c => ({ ...c, company: name, website: c.website && c.website === pickedSite.current ? '' : c.website })); }
+  function orgTryAgain() { orgSearchId.current++; setOrgStage('form'); }
   function submitCompany() {
     const a = sr.current.orgAnswers;
     a.company = company.none ? (sr.current.name !== 'there' ? sr.current.name + '’s future organisation' : 'Your future organisation') : (company.company.trim() || 'Your organisation');
@@ -682,24 +726,14 @@ export default function DavidModal({ isOpen, onClose }: { isOpen: boolean; onClo
     const summary = companyName+' is a '+(sizeKnown?size+'-employee ':'')+ind.toLowerCase()+' organisation based in '+country+'. The clearest priorities are '+objT+', and most work runs through '+st+' today. The team is '+staffingT+', and the bigger constraint on the customer side is '+growthT+'.';
     const date = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
     setCrData({ company: companyName, country, industry: ind, date, summary, driversHTML, findingsHTML });
-    nav('report');
+    populateWorkforce(); nav('report');
     speak('Here is what I understand about '+companyName+'.');
   }
 
-  // ── Next steps: 7-day experience, value report, workforce, pricing, setup ──
+  // ── Next steps: workforce (shown in the report), setup ──
   function populateWorkforce() {
     const names = INDUSTRY_WORKFORCE[sr.current.industry] || INDUSTRY_WORKFORCE['Professional Services'];
     setWorkforceSelection(prev => prev.length ? prev : [...names]);
-  }
-  function startSevenDay() {
-    populateWorkforce(); nav('7day-start');
-    speak('Great! I now understand your organisation, and I\'m ready to start working with you.');
-  }
-  function startWhatHappened() { nav('what-happened'); speak('Here\'s what I\'ve done so far.'); }
-  function startValueReport() { nav('value-report'); speak('Here\'s what I\'ve learned, what I\'ve done and the value I can bring.'); }
-  function startBuildWorkforce() {
-    populateWorkforce(); nav('build-workforce');
-    speak('For a '+sr.current.industry+' organisation, here is the OI Workforce I would recommend.');
   }
   function valueLineFor(name: string): string {
     const person = WORKFORCE_LIBRARY[name]; if (!person) return '';
@@ -714,7 +748,6 @@ export default function DavidModal({ isOpen, onClose }: { isOpen: boolean; onClo
     return 'Takes the coordination off your plate, so you can focus on '+(obj[0] ? 'what you flagged: '+obj[0].toLowerCase() : 'your top priority')+'.';
   }
   function growingRevenue(a: Record<string,string|string[]>) { return hasAnswer(a,'goals','Grow revenue'); }
-  function calcMonthly(name: string): number { const p = WORKFORCE_LIBRARY[name]; return p ? Math.round((p.benchmark/12)*OI_PRICING_PCT) : 0; }
   function startLoading() {
     nav('loading'); let idx = 0;
     function step() { if (idx>=LOADING_LINES.length) { later(startWelcome,500); return; } setLoadingLine(LOADING_LINES[idx]); setLoadingPct(Math.round(((idx+1)/LOADING_LINES.length)*100)); idx++; later(step,750); }
@@ -733,7 +766,7 @@ export default function DavidModal({ isOpen, onClose }: { isOpen: boolean; onClo
       sr.current.industry = ind; sr.current.mockBusiness = MOCK_BUSINESSES[ind] || MOCK_BUSINESSES['Professional Services']; setSelIndustry(ind);
     }
     if (n >= 5 && !sr.current.position) { sr.current.position = POSITION_OPTIONS[0]; setSelRole(POSITION_OPTIONS[0]); }
-    if (n >= 11) populateWorkforce();
+    if (n >= 10) populateWorkforce();
     jumpingRef.current = true;
     switch (n) {
       case 1: nav('intro'); break;
@@ -743,34 +776,26 @@ export default function DavidModal({ isOpen, onClose }: { isOpen: boolean; onClo
       case 5: nav('chat'); if (!chatMsgs.length) startChat(); break;
       case 6: if (sr.current.momentStarted) { nav('moment'); setMomentCount(MOMENT_LINES.length); } else startMoment(); break;
       case 7: nav('offer'); break;
-      case 8: if (orgStage === 'searching') setOrgStage('form'); nav('company'); break;
+      case 8: if (orgStage === 'searching') orgTryAgain(); nav('company'); break;
       case 9: startDiscovery(); break;
       case 10: startCapacityReport(); break;
-      case 11: startSevenDay(); break;
-      case 12: startWhatHappened(); break;
-      case 13: startValueReport(); break;
-      case 14: startBuildWorkforce(); break;
-      case 15: nav('pricing'); break;
-      case 16: startWelcome(); break;
+      case 11: startWelcome(); break;
     }
     jumpingRef.current = false;
     if (backward) setSlideDir('back');
   }
   function startPersonalise() { setVoiceGender(''); setAvatarPhotoSel(null); setPersonalName(''); setPersonalStyle(''); setShowAvatarSection(false); nav('personalise'); }
 
-  const totalOI = workforceSelection.reduce((s,n) => s+calcMonthly(n), 0);
   const totalHuman = workforceSelection.reduce((s,n) => { const p=WORKFORCE_LIBRARY[n]; return s+(p?Math.round(p.benchmark/12):0); }, 0);
   const replacementValue = totalHuman*12;
   const capabilityValue = Math.round(replacementValue*1.5);
   const productiveValue = Math.round(replacementValue*1.8);
-  const annualOIWithDiscount = Math.round(totalOI*12*0.9);
 
   const biz = sr.current.mockBusiness;
   const currentDiscQ = sr.current.activeQuestions[discIdx];
   const discNeedsOther = !currentDiscQ?.freeText && discSel.includes(OTHER_OPTION) && !otherText.trim();
-  const unusedResp = RESPONSES.filter(r => !sr.current.usedResponses.has(r.prompt));
-  const quickPrompts = [...unusedResp.filter(r => r.roles.includes(sr.current.position)), ...unusedResp.filter(r => !r.roles.includes(sr.current.position))].slice(0,4);
-  const stepNum = SCREEN_STEP[screen] || 16;
+  const quickPrompts = [...RESPONSES.filter(r => r.roles.includes(sr.current.position)), ...RESPONSES.filter(r => !r.roles.includes(sr.current.position))].slice(0,4);
+  const stepNum = SCREEN_STEP[screen] || STEP_LABELS.length;
   const isNextSteps = !SCREEN_STEP[screen];
   const canGoBack = screen === 'discovery' || (!TRANSIENT_SCREENS.has(screen) && historyRef.current.length > 0);
   const headerBack = screen === 'discovery' ? discBack : goBack;
@@ -799,10 +824,11 @@ export default function DavidModal({ isOpen, onClose }: { isOpen: boolean; onClo
           <div className="oi-steps">
             <button type="button" className="oi-steps-arrow" disabled={stepWin === 0} onClick={() => setStepWin(w => Math.max(0, w - STEP_WIN))} aria-label="Previous steps"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg></button>
             <div className="oi-steps-view">
-              <ol className="oi-steps-track" style={{ '--win': stepWin } as CSSProperties} aria-label={isNextSteps ? 'All steps complete' : 'Step '+stepNum+' of 16: '+STEP_LABELS[stepNum-1]}>
+              <ol className="oi-steps-track" style={{ '--win': stepWin } as CSSProperties} aria-label={isNextSteps ? 'All steps complete' : 'Step '+stepNum+' of '+STEP_LABELS.length+': '+STEP_LABELS[stepNum-1]}>
                 {STEP_LABELS.map((l,i) => {
                   const state = !isNextSteps && i === stepNum-1 ? 'current' : completed.has(i+1) ? 'done' : '';
-                  return <li key={l} className={state} aria-current={state === 'current' ? 'step' : undefined}><button type="button" tabIndex={i >= stepWin && i < stepWin + STEP_WIN ? 0 : -1} title={(i+1)+'. '+l} aria-label={'Go to step '+(i+1)+': '+l} onClick={() => goToStep(i+1)}>{i+1}</button></li>;
+                  const near = !isNextSteps && Math.abs(i - (stepNum-1)) === 1 ? ' near' : '';
+                  return <li key={l} className={state+near}aria-current={state === 'current' ? 'step' : undefined}><button type="button" tabIndex={i >= stepWin && i < stepWin + STEP_WIN ? 0 : -1} title={(i+1)+'. '+l} aria-label={'Go to step '+(i+1)+': '+l} onClick={() => goToStep(i+1)}>{i+1}</button></li>;
                 })}
               </ol>
             </div>
@@ -931,7 +957,7 @@ export default function DavidModal({ isOpen, onClose }: { isOpen: boolean; onClo
                   <div className="oi-david-brand">{biz?.name}</div>
                 </div>
                 <div className="oi-prompts">
-                  {quickPrompts.map(r => <button key={r.prompt} type="button" onClick={() => sendChat(r.prompt)}>{r.prompt}</button>)}
+                  {quickPrompts.map(r => <button key={r.prompt} type="button" disabled={sr.current.usedResponses.has(r.prompt)} onClick={() => { setAskLocked(true); sendChat(r.prompt); }}>{r.prompt}</button>)}
                 </div>
                 <div className="oi-chat-log" ref={chatLogRef}>
                   {chatMsgs.map(msg => msg.from==='thinking'
@@ -945,9 +971,9 @@ export default function DavidModal({ isOpen, onClose }: { isOpen: boolean; onClo
                   <span className="oi-wave">{Array.from({ length: 9 }).map((_,i) => <i key={i}></i>)}</span>
                   <div className={'oi-voice-label'+(micMessage?' oi-voice-error':'')}>{micMessage || (listening ? 'David is listening…' : hasRecognition ? 'Tap the mic to talk to David' : 'Voice input not supported here — type below')}</div>
                 </div>
-                <div className="oi-ask">
-                  <input type="text" ref={chatInputRef} placeholder="Ask me anything…" onKeyDown={e => { if (e.key==='Enter') sendChat((e.target as HTMLInputElement).value); }} />
-                  <button type="button" onClick={() => sendChat(chatInputRef.current?.value || '')} aria-label="Send"><Ico d={ICONS.arrow} size={16} sw={2.2} /></button>
+                <div className={'oi-ask'+(askLocked?' locked':'')}>
+                  <input type="text" ref={chatInputRef} disabled={askLocked} placeholder="Ask me anything…" onKeyDown={e => { if (e.key==='Enter') sendChat((e.target as HTMLInputElement).value); }} />
+                  <button type="button" disabled={askLocked} onClick={() => sendChat(chatInputRef.current?.value || '')} aria-label="Send"><Ico d={ICONS.arrow} size={16} sw={2.2} /></button>
                 </div>
                 {continueVisible && <div className="oi-chat-next"><button className="david-continue-btn" type="button" onClick={startMoment}>I&rsquo;ve seen enough &mdash; what&rsquo;s next? &rarr;</button></div>}
               </div>
@@ -959,7 +985,6 @@ export default function DavidModal({ isOpen, onClose }: { isOpen: boolean; onClo
             <div className="oi-imagine">
               <div className="oi-head" style={{ marginBottom:16 }}><h3>Imagine&hellip;</h3><p>Now picture this working for your organisation.</p></div>
               <div className="oi-imagine-body">
-                <img className="oi-imagine-photo" src={PERSONAL_OI_PHOTO} alt="" />
                 <div className="oi-imagine-lines">
                   {MOMENT_LINES.slice(0, momentCount).map((l,i) => <p key={i} className={'oi-line '+l.cls}>{l.t}</p>)}
                 </div>
@@ -997,10 +1022,6 @@ export default function DavidModal({ isOpen, onClose }: { isOpen: boolean; onClo
               <div style={{ display:'flex', gap:10, marginTop:14 }}>
                 <button type="button" className="oi-btn oi-btn-blue" style={{ flex:1 }} onClick={() => { setOrgStage('form'); nav('company'); }}>Get to know my organisation <Ico d={ICONS.arrow} size={16} sw={2} /></button>
               </div>
-              <div className="oi-offer-links">
-                <button type="button" className="oi-link-btn" onClick={() => nav('arrange')}>Prefer to loop in a colleague first?</button>
-                <button type="button" className="oi-link-btn" onClick={onClose}>I&rsquo;m not ready yet</button>
-              </div>
             </div>
           </div>
 
@@ -1030,15 +1051,11 @@ export default function DavidModal({ isOpen, onClose }: { isOpen: boolean; onClo
           {/* 8 · Tell us about your company */}
           <div className={'david-screen oi-screen'+(sc('company')?' active':'')} data-screen="company">
             <div className="oi-card oi-narrow oi-form">
-              <div className="oi-org-hero" style={{ backgroundImage: 'linear-gradient(180deg, rgba(0,27,92,.2) 0%, rgba(0,27,92,.82) 100%), url('+OFFICE_PHOTO+')' }}>
-                <img className="oi-org-hero-photo" src={PERSONAL_OI_PHOTO} alt="" />
-                <div className="oi-org-hero-name"><strong>Personal OI</strong><span>Your OI Consultant</span></div>
-              </div>
               {orgStage === 'form' && (<>
                 <h3 className="oi-card-title">Let me find your organisation.</h3>
                 <p className="oi-card-sub">Tell me the name of your organisation and if possible, your website or work email. It will search and find publicly available information to build an initial understanding of your organisation.</p>
                 <form className="oi-form-grid" onSubmit={e => { e.preventDefault(); startOrgSearch(); }}>
-                  <label className="oi-row"><span>Organisation name</span><input type="text" value={company.company} disabled={company.none} onChange={e => setCompany(c => ({ ...c, company: e.target.value }))} placeholder="Rockstone's Office" /></label>
+                  <label className="oi-row"><span>Organisation name</span><input type="text" value={company.company} disabled={company.none} onChange={e => setOrgName(e.target.value)} placeholder="Rockstone's Office" /></label>
                   <label className="oi-row"><span>Website <em>(optional)</em></span><input type="text" value={company.website} disabled={company.none} onChange={e => setCompany(c => ({ ...c, website: e.target.value }))} placeholder="https://yourcompany.com" /></label>
                   <label className="oi-row"><span>Work email <em>(optional)</em></span><input type="text" value={company.email} disabled={company.none} onChange={e => setCompany(c => ({ ...c, email: e.target.value }))} placeholder="name@yourcompany.com" /></label>
                   <label className="oi-row"><span>Country / Region</span>
@@ -1057,6 +1074,24 @@ export default function DavidModal({ isOpen, onClose }: { isOpen: boolean; onClo
                   <div className="david-loading-track"><div className="david-loading-fill" style={{ width:orgPct+'%' }}></div></div>
                 </div>
               )}
+              {orgStage === 'pick' && (<>
+                <h3 className="oi-card-title">{orgResults.length === 1 ? 'I found this website.' : 'I found '+orgResults.length+' websites.'}</h3>
+                <p className="oi-card-sub">Which one is {company.company.trim()}?</p>
+                <div className="oi-org-results">
+                  {orgResults.map(r => (
+                    <button key={r.host} type="button" className="oi-org-result" onClick={() => pickOrgResult(r)}>
+                      <span className="oi-org-result-ico"><Ico d={ICONS.link} size={15} /></span>
+                      <span className="oi-org-result-text"><strong>{r.title}</strong><em>{r.host}</em>{r.snippet && <span>{r.snippet}</span>}</span>
+                      <Ico d={ICONS.arrow} size={15} sw={2} />
+                    </button>
+                  ))}
+                </div>
+              </>)}
+              {orgStage === 'none' && (<>
+                <h3 className="oi-card-title">I couldn&rsquo;t find a website.</h3>
+                <p className="oi-card-sub">I searched for &ldquo;{company.company.trim()}&rdquo; but found no matching website. Check the name, or add your website or work email, and try again.</p>
+                <button type="button" className="oi-btn oi-btn-blue oi-btn-block" onClick={orgTryAgain}>Try again</button>
+              </>)}
               {orgStage === 'found' && (<>
                 <h3 className="oi-card-title">I think I&rsquo;ve found you.</h3>
                 <div className="oi-found-card">
@@ -1065,11 +1100,11 @@ export default function DavidModal({ isOpen, onClose }: { isOpen: boolean; onClo
                     <span>{(company.none ? (sr.current.name !== 'there' ? sr.current.name + '’s future organisation' : 'Your future organisation') : (company.company.trim() || 'Your organisation')).toUpperCase()}</span>
                   </div>
                   <div className="oi-found-info">
-                    <strong>{company.none ? (sr.current.name !== 'there' ? sr.current.name + '’s future organisation' : 'Your future organisation') : (company.company.trim() || 'Your organisation')}</strong>
+                    <strong>{orgPick && company.website === orgPick.link ? orgPick.title : company.none ? (sr.current.name !== 'there' ? sr.current.name + '’s future organisation' : 'Your future organisation') : (company.company.trim() || 'Your organisation')}</strong>
                     <span className="oi-found-meta">{company.industry || sr.current.industry || 'Professional Services'}</span>
                     <div className="oi-found-row"><Ico d={ICONS.pin} size={14} /><span>{company.country ? (CITY_BY_COUNTRY[company.country] || '') + (CITY_BY_COUNTRY[company.country] ? ', ' : '') + company.country : 'your region'}</span></div>
                     {!company.none && company.website.trim() && <div className="oi-found-row"><Ico d={ICONS.link} size={14} /><span>{company.website}</span></div>}
-                    <p className="oi-found-desc">{(company.none ? (sr.current.name !== 'there' ? sr.current.name + '’s future organisation' : 'Your future organisation') : (company.company.trim() || 'Your organisation'))} operates in the {(company.industry || sr.current.industry || 'professional services').toLowerCase()} sector, based in {company.country ? (CITY_BY_COUNTRY[company.country] || company.country) : 'your region'}{company.country ? ', ' + company.country : ''}.</p>
+                    <p className="oi-found-desc">{orgPick && company.website === orgPick.link && orgPick.snippet ? orgPick.snippet : <>{(company.none ? (sr.current.name !== 'there' ? sr.current.name + '’s future organisation' : 'Your future organisation') : (company.company.trim() || 'Your organisation'))} operates in the {(company.industry || sr.current.industry || 'professional services').toLowerCase()} sector, based in {company.country ? (CITY_BY_COUNTRY[company.country] || company.country) : 'your region'}{company.country ? ', ' + company.country : ''}.</>}</p>
                   </div>
                   <div className="oi-found-also-col">
                     <div className="oi-found-also">Also found</div>
@@ -1082,10 +1117,7 @@ export default function DavidModal({ isOpen, onClose }: { isOpen: boolean; onClo
                   </div>
                 </div>
                 <p className="oi-found-q">Is this your organisation?</p>
-                <div style={{ display:'flex', gap:10 }}>
-                  <button type="button" className="oi-btn oi-btn-outline oi-btn-block" onClick={orgTryAgain}>No, try again</button>
-                  <button type="button" className="oi-btn oi-btn-blue oi-btn-block" onClick={submitCompany}>Yes, that&rsquo;s us</button>
-                </div>
+                <button type="button" className="oi-btn oi-btn-blue oi-btn-block" onClick={submitCompany}>Yes, that&rsquo;s us</button>
               </>)}
             </div>
           </div>
@@ -1094,13 +1126,8 @@ export default function DavidModal({ isOpen, onClose }: { isOpen: boolean; onClo
           <div className={'david-screen oi-screen'+(sc('discovery')?' active':'')} data-screen="discovery">
             {currentDiscQ && (
               <div className="oi-card oi-narrow" key={discIdx}>
-                <p className="oi-q-intro">Whilst I&rsquo;m getting to know your company, let me ask you&hellip;</p>
+                {discIdx === 0 && <p className="oi-q-intro">Whilst I&rsquo;m getting to know your company, let me ask you&hellip;</p>}
                 <div className="oi-q-row">
-                  <div className="oi-q-avatar">
-                    <img src={PERSONAL_OI_PHOTO} alt="" />
-                    <strong>Personal OI</strong>
-                    <em>Your OI Consultant</em>
-                  </div>
                   <div className="oi-q-bubble">
                     <div className="oi-q-count">Question {discIdx+1} of {sr.current.activeQuestions.length}</div>
                     <h3 className="oi-q-text">{currentDiscQ.text}</h3>
@@ -1140,13 +1167,13 @@ export default function DavidModal({ isOpen, onClose }: { isOpen: boolean; onClo
                   <div className={'oi-opt-grid'+(currentDiscQ.key==='whoUses'?' oi-opt-grid-photo':'')}>
                     {currentDiscQ.options.map(opt => {
                       const on = discSel.includes(opt);
-                      const photo = currentDiscQ.key === 'whoUses' ? WHOUSES_PHOTOS[opt] : undefined;
+                      const photos = currentDiscQ.key === 'whoUses' ? WHOUSES_PHOTOS[opt] : undefined;
                       const icon = currentDiscQ.key === 'goals' ? GOALS_ICONS[opt] : QUESTION_ICONS[opt] || '';
                       return (
-                        <button key={opt} type="button" className={'oi-opt'+(on?' selected':'')+(opt===OTHER_OPTION?' wide':'')+(photo?' oi-opt-photo-btn':'')} aria-pressed={on} onClick={() => toggleDisc(opt)}>
+                        <button key={opt} type="button" className={'oi-opt'+(on?' selected':'')+(opt===OTHER_OPTION?' wide':'')+(photos?' oi-opt-photo-btn':'')} aria-pressed={on} onClick={() => toggleDisc(opt)}>
                           {on ? <span className="oi-opt-check"><Ico d={ICONS.check} size={13} sw={3} /></span>
-                            : photo ? <span className="oi-opt-photo" style={{ backgroundImage:'url('+photo+')' }}></span>
-                            : photo === undefined && currentDiscQ.key === 'whoUses' ? <span className="oi-opt-icon"><Ico d={ICONS.people} size={20} /></span>
+                            : photos ? <span className={'oi-opt-photos n'+photos.length}>{photos.map(p => <span key={p} className="oi-opt-photo" style={{ backgroundImage:'url('+p+')' }}></span>)}</span>
+                            : currentDiscQ.key === 'whoUses' ? <span className="oi-opt-icon"><Ico d={ICONS.people} size={20} /></span>
                             : icon ? <span className="oi-opt-icon"><Ico d={icon} size={20} /></span> : <span className="oi-opt-dot"></span>}
                           <span>{opt}</span>
                         </button>
@@ -1175,9 +1202,8 @@ export default function DavidModal({ isOpen, onClose }: { isOpen: boolean; onClo
                 </div>
                 <div className="oi-brief">
                   <div className="oi-brief-text">
-                    <ConsultantHead />
                     <p>I&rsquo;ve combined what you told me with publicly available information to create an initial Operational Intelligence Brief about your organisation.</p>
-                    <p>You can review it below, download a full version and even share it with your team.</p>
+                    <p>You can review it below.</p>
                   </div>
                   <div className="oi-brief-photo" style={{ backgroundImage: 'url('+(INDUSTRY_PHOTOS[crData.industry] || OFFICE_PHOTO)+')' }}>
                     <span>{crData.company}</span>
@@ -1193,12 +1219,88 @@ export default function DavidModal({ isOpen, onClose }: { isOpen: boolean; onClo
                     </div>
                   ))}
                 </div>
-                <button type="button" className="oi-link-btn" style={{ display:'block', textAlign:'center', marginBottom:14 }} onClick={() => nav('capacity-report')}>View the full interactive report &rarr;</button>
-                <div className="oi-brief-actions-row">
-                  <button type="button" className="oi-btn oi-btn-outline" onClick={() => window.print()}><Ico d={ICONS.download} size={16} sw={2} /> Download full report</button>
-                  <button type="button" className="oi-btn oi-btn-outline"><Ico d={ICONS.link} size={16} sw={2} /> Share internally</button>
-                </div>
-                <button type="button" className="oi-btn oi-btn-blue oi-btn-block" onClick={startSevenDay}>Let&rsquo;s explore a 7-Day OI Experience <Ico d={ICONS.arrow} size={16} sw={2} /></button>
+                {/* Steps 11–14 now live inside step 10, one after another in the scroll. */}
+                <section className="oi-report-part" data-screen="7day-start">
+                  <div className="oi-card">
+                    <h3 className="oi-card-title">Your 7-Day OI Experience Starts Now</h3>
+                    <p className="oi-7d-intro">Great! I now understand your organisation, and I&rsquo;m ready to start working with you.</p>
+                    <div className="oi-day-badge"><strong>Day 1 of 7 &middot; 7-Day OI Experience</strong><span>{sevenDayRange()}</span></div>
+                    <p className="oi-7d-note">We&rsquo;re just getting started. I&rsquo;ll keep you updated as we go.</p>
+                    <div className="oi-howitworks">
+                      <div className="oi-howitworks-title">What I&rsquo;ll be doing over the next 7 days</div>
+                      <div className="oi-sevenday-grid">
+                        {SEVEN_DAY_ITEMS.map((it,i) => (
+                          <div key={it.title} className="oi-sevenday-item"><span className="oi-feature-icon" style={{ background:BRIEF_COLORS[i % BRIEF_COLORS.length], color:'#fff' }}><Ico d={ICONS[it.icon as keyof typeof ICONS]} size={18} /></span><strong>{it.title}</strong><span>{it.text}</span></div>
+                        ))}
+                      </div>
+                    </div>
+                    <div className="oi-howitworks">
+                      <div className="oi-howitworks-title">What you need to do</div>
+                      <ul className="oi-check-list">
+                        {SEVEN_DAY_TODO.map((t,i) => <li key={t}><CheckDot i={i} />{t}</li>)}
+                      </ul>
+                    </div>
+                  </div>
+                </section>
+
+                <section className="oi-report-part" data-screen="what-happened">
+                  <div className="oi-card">
+                    <h3 className="oi-card-title">What happened during your 7-day Experience?</h3>
+                    <p className="oi-wh-intro">Over the past 7 days, I&rsquo;ve been learning from your organisation, completing real work and connecting your information.</p>
+                    <p className="oi-wh-lead">Here&rsquo;s what I&rsquo;ve done so far.</p>
+                    <div className="oi-stat-toolbar"><span>Show: Last 7 days &#9662;</span><span>{sevenDayRange()}</span></div>
+                    <div className="oi-stat-grid">
+                      {EXPERIENCE_STATS.map((s,i) => (
+                        <div key={s.label} className="oi-stat-tile"><span className="oi-feature-icon" style={{ background:BRIEF_COLORS[i % BRIEF_COLORS.length], color:'#fff' }}><Ico d={ICONS[s.icon as keyof typeof ICONS]} size={18} /></span><strong>{s.value}</strong><span className="oi-stat-label">{s.label}</span><span className="oi-stat-text">{s.text}</span></div>
+                      ))}
+                    </div>
+                  </div>
+                </section>
+
+                <section className="oi-report-part" data-screen="value-report">
+                  <div className="oi-card">
+                    <h3 className="oi-card-title">Your OI Value Report</h3>
+                    <p className="oi-vr-intro">Here&rsquo;s what I&rsquo;ve learned, what I&rsquo;ve done and the value I can bring.</p>
+                    <div className="oi-badge-row">
+                      <span className="oi-badge pink"><Ico d={ICONS.store} size={14} /> Spend less</span>
+                      <span className="oi-badge blue"><Ico d={ICONS.bolt} size={14} /> Do more</span>
+                      <span className="oi-badge green"><Ico d={ICONS.check} size={14} /> Work better</span>
+                    </div>
+                    <div className="oi-howitworks">
+                      <div className="oi-howitworks-title">Potential and demonstrated value</div>
+                      <div className="oi-value-grid">
+                        <div className="oi-value-card"><strong>{fmtMoney(replacementValue, currency)}</strong><span>Replacement Value</span><em>Estimated annual value</em></div>
+                        <div className="oi-value-card"><strong>{fmtMoney(capabilityValue, currency)}</strong><span>Capability Value</span><em>Estimated annual value</em></div>
+                        <div className="oi-value-card"><strong>{fmtMoney(productiveValue, currency)}</strong><span>Productive Value</span><em>Estimated annual value</em></div>
+                      </div>
+                    </div>
+                    <div className="oi-howitworks">
+                      <div className="oi-howitworks-title">Other key outcomes</div>
+                      <div className="oi-outcome-grid">
+                        {OTHER_OUTCOMES.map((o,i) => <div key={o.title} className="oi-outcome-item"><CheckDot i={i} /><div><strong>{o.title}</strong><span>{o.text}</span></div></div>)}
+                      </div>
+                    </div>
+                  </div>
+                </section>
+
+                <section className="oi-report-part" data-screen="build-workforce">
+                  <div className="david-eyebrow">Your Recommended Workforce&trade;</div>
+                  <div className="david-wizard-q">Based on our chat, here&rsquo;s the OI Workforce I&rsquo;d recommend — built around what you told me matters: {answerText(sr.current.orgAnswers,'goals','your top priorities')}.</div>
+                  <div className="oi-wf-list">
+                    {workforceSelection.map(name => {
+                      const p = WORKFORCE_LIBRARY[name]; if (!p) return null;
+                      const initials = name.split(' ').map(x=>x[0]).join(''); const photo = CONSULTANT_PHOTOS[name];
+                      return (
+                        <div key={name} className="david-workforce-card">
+                          {photo ? <img className="wf-avatar" src={photo} alt={name} /> : <div className="wf-avatar" style={{ background:p.color, display:'flex', alignItems:'center', justifyContent:'center', color:'#fff', fontFamily:'Manrope,sans-serif', fontWeight:700, fontSize:13 }}>{initials}</div>}
+                          <div className="wf-text"><span className="wf-role">{p.title}</span><strong>{name}</strong><p>{p.reason}</p><div className="wf-value"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M20 6L9 17l-5-5"/></svg>{valueLineFor(name)}</div></div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </section>
+
+                <button type="button" className="oi-btn oi-btn-blue oi-btn-block" onClick={startLoading}>Employ my OI Workforce <Ico d={ICONS.arrow} size={16} sw={2} /></button>
               </div>
             )}
           </div>
@@ -1221,178 +1323,21 @@ export default function DavidModal({ isOpen, onClose }: { isOpen: boolean; onClo
             )}
             <div className="cr-paper-actions">
               <button type="button" className="oi-btn oi-btn-outline" onClick={() => window.print()}><Ico d={ICONS.download} size={17} sw={2} /> Download PDF</button>
-              <button type="button" className="oi-btn oi-btn-blue" onClick={startSevenDay}>Continue <Ico d={ICONS.arrow} size={16} sw={2} /></button>
-            </div>
-          </div>
-
-          {/* 11 · Your 7-day OI Experience Starts Now */}
-          <div className={'david-screen oi-screen'+(sc('7day-start')?' active':'')} data-screen="7day-start">
-            <div className="oi-card oi-narrow">
-              <ConsultantHead />
-              <h3 className="oi-card-title">Your 7-Day OI Experience Starts Now</h3>
-              <p className="oi-7d-intro">Great! I now understand your organisation, and I&rsquo;m ready to start working with you.</p>
-              <div className="oi-day-badge"><strong>Day 1 of 7 &middot; 7-Day OI Experience</strong><span>{sevenDayRange()}</span></div>
-              <p className="oi-7d-note">We&rsquo;re just getting started. I&rsquo;ll keep you updated as we go.</p>
-              <div className="oi-howitworks">
-                <div className="oi-howitworks-title">What I&rsquo;ll be doing over the next 7 days</div>
-                <div className="oi-sevenday-grid">
-                  {SEVEN_DAY_ITEMS.map((it,i) => (
-                    <div key={it.title} className="oi-sevenday-item"><span className="oi-feature-icon" style={{ background:BRIEF_COLORS[i % BRIEF_COLORS.length], color:'#fff' }}><Ico d={ICONS[it.icon as keyof typeof ICONS]} size={18} /></span><strong>{it.title}</strong><span>{it.text}</span></div>
-                  ))}
-                </div>
-              </div>
-              <div className="oi-howitworks">
-                <div className="oi-howitworks-title">What you need to do</div>
-                <ul className="oi-check-list">
-                  {SEVEN_DAY_TODO.map((t,i) => <li key={t}><CheckDot i={i} />{t}</li>)}
-                </ul>
-              </div>
-              <div style={{ display:'flex', gap:10 }}>
-                <button type="button" className="oi-btn oi-btn-blue" style={{ flex:1 }} onClick={startWhatHappened}>Start my 7-Day Experience <Ico d={ICONS.arrow} size={16} sw={2} /></button>
-              </div>
-            </div>
-          </div>
-
-          {/* 12 · What happened during your 7-day Experience */}
-          <div className={'david-screen oi-screen'+(sc('what-happened')?' active':'')} data-screen="what-happened">
-            <div className="oi-card oi-narrow">
-              <ConsultantHead />
-              <h3 className="oi-card-title">What happened during your 7-day Experience?</h3>
-              <p className="oi-wh-intro">Over the past 7 days, I&rsquo;ve been learning from your organisation, completing real work and connecting your information.</p>
-              <p className="oi-wh-lead">Here&rsquo;s what I&rsquo;ve done so far.</p>
-              <div className="oi-stat-toolbar"><span>Show: Last 7 days &#9662;</span><span>{sevenDayRange()}</span></div>
-              <div className="oi-stat-grid">
-                {EXPERIENCE_STATS.map((s,i) => (
-                  <div key={s.label} className="oi-stat-tile"><span className="oi-feature-icon" style={{ background:BRIEF_COLORS[i % BRIEF_COLORS.length], color:'#fff' }}><Ico d={ICONS[s.icon as keyof typeof ICONS]} size={18} /></span><strong>{s.value}</strong><span className="oi-stat-label">{s.label}</span><span className="oi-stat-text">{s.text}</span></div>
-                ))}
-              </div>
-              <div className="oi-wh-actions">
-                <button type="button" className="oi-btn oi-btn-outline" onClick={() => window.print()}><Ico d={ICONS.download} size={17} sw={2} /> Download full report</button>
-                <button type="button" className="oi-btn oi-btn-outline" onClick={() => { window.location.href = 'mailto:?subject=My OI Workforce — 7-Day Experience&body=Here is what my Personal OI has done this week.'; }}><Ico d={ICONS.mail} size={17} sw={2} /> Share internally</button>
-                <button type="button" className="oi-btn oi-btn-blue" style={{ flex:1 }} onClick={startValueReport}>See my OI Value Report <Ico d={ICONS.arrow} size={16} sw={2} /></button>
-              </div>
-            </div>
-          </div>
-
-          {/* 13 · Your OI Value Report */}
-          <div className={'david-screen oi-screen'+(sc('value-report')?' active':'')} data-screen="value-report">
-            <div className="oi-card oi-narrow">
-              <ConsultantHead />
-              <h3 className="oi-card-title">Your OI Value Report</h3>
-              <p className="oi-vr-intro">Here&rsquo;s what I&rsquo;ve learned, what I&rsquo;ve done and the value I can bring.</p>
-              <div className="oi-badge-row">
-                <span className="oi-badge pink"><Ico d={ICONS.store} size={14} /> Spend less</span>
-                <span className="oi-badge blue"><Ico d={ICONS.bolt} size={14} /> Do more</span>
-                <span className="oi-badge green"><Ico d={ICONS.check} size={14} /> Work better</span>
-              </div>
-              <div className="oi-howitworks">
-                <div className="oi-howitworks-title">Potential and demonstrated value</div>
-                <div className="oi-value-grid">
-                  <div className="oi-value-card"><strong>{fmtMoney(replacementValue, currency)}</strong><span>Replacement Value</span><em>Estimated annual value</em></div>
-                  <div className="oi-value-card"><strong>{fmtMoney(capabilityValue, currency)}</strong><span>Capability Value</span><em>Estimated annual value</em></div>
-                  <div className="oi-value-card"><strong>{fmtMoney(productiveValue, currency)}</strong><span>Productive Value</span><em>Estimated annual value</em></div>
-                </div>
-              </div>
-              <div className="oi-howitworks">
-                <div className="oi-howitworks-title">Other key outcomes</div>
-                <div className="oi-outcome-grid">
-                  {OTHER_OUTCOMES.map((o,i) => <div key={o.title} className="oi-outcome-item"><CheckDot i={i} /><div><strong>{o.title}</strong><span>{o.text}</span></div></div>)}
-                </div>
-              </div>
-              <div className="oi-wh-actions">
-                <button type="button" className="oi-btn oi-btn-outline" onClick={() => window.print()}><Ico d={ICONS.download} size={17} sw={2} /> Download full report</button>
-                <button type="button" className="oi-btn oi-btn-outline" onClick={() => { window.location.href = 'mailto:?subject=Our OI Value Report'; }}><Ico d={ICONS.people} size={17} sw={2} /> Share with your team</button>
-                <button type="button" className="oi-btn oi-btn-blue" style={{ flex:1 }} onClick={startBuildWorkforce}>See my recommended Workforce <Ico d={ICONS.arrow} size={16} sw={2} /></button>
-              </div>
-            </div>
-          </div>
-
-          {/* 14 · recommended workforce */}
-          <div className={'david-screen oi-screen'+(sc('build-workforce')?' active':'')} data-screen="build-workforce">
-            <div className="david-wizard" style={{ maxWidth:560 }}>
-              <div className="david-eyebrow">Your Recommended Workforce&trade;</div>
-              <div className="david-wizard-q">Based on our chat, here&rsquo;s the OI Workforce I&rsquo;d recommend — built around what you told me matters: {answerText(sr.current.orgAnswers,'goals','your top priorities')}.</div>
-              <div className="oi-wf-list">
-                {workforceSelection.map(name => {
-                  const p = WORKFORCE_LIBRARY[name]; if (!p) return null;
-                  const initials = name.split(' ').map(x=>x[0]).join(''); const photo = CONSULTANT_PHOTOS[name];
-                  return (
-                    <div key={name} className="david-workforce-card">
-                      {photo ? <img className="wf-avatar" src={photo} alt={name} /> : <div className="wf-avatar" style={{ background:p.color, display:'flex', alignItems:'center', justifyContent:'center', color:'#fff', fontFamily:'Manrope,sans-serif', fontWeight:700, fontSize:13 }}>{initials}</div>}
-                      <div className="wf-text"><span className="wf-role">{p.title}</span><strong>{name}</strong><p>{p.reason}</p><div className="wf-value"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M20 6L9 17l-5-5"/></svg>{valueLineFor(name)}</div></div>
-                    </div>
-                  );
-                })}
-              </div>
-              <div style={{ display:'flex', gap:10 }}>
-                <button className="oi-btn oi-btn-blue" style={{ flex:1 }} type="button" onClick={() => nav('pricing')}>See your investment <Ico d={ICONS.arrow} size={16} sw={2} /></button>
-              </div>
-            </div>
-          </div>
-
-          {/* 15 · investment */}
-          <div className={'david-screen oi-screen'+(sc('pricing')?' active':'')} data-screen="pricing">
-            <div className="david-wizard" style={{ maxWidth:580 }}>
-              <div className="david-eyebrow">Your Investment</div>
-              <div className="david-wizard-q">Estimated annual value {fmtMoney(capabilityValue, currency)}</div>
-              <p className="oi-price-intro">Adjust this to fit your budget &mdash; remove a role, or swap it for a different one.</p>
-              <div className="oi-price-currency">
-                <label>Currency</label>
-                <select className="oi-select-sm" value={currency} onChange={e => setCurrency(e.target.value as Currency)}>
-                  <option value="USD">USD $</option><option value="GBP">GBP £</option><option value="EUR">EUR €</option><option value="GHS">GHS ₵</option>
-                </select>
-              </div>
-              <div className="oi-price-list">
-                {workforceSelection.map((name,idx) => {
-                  const p=WORKFORCE_LIBRARY[name]; if (!p) return null;
-                  const mOI=calcMonthly(name); const mH=Math.round(p.benchmark/12); const photo=CONSULTANT_PHOTOS[name];
-                  return (
-                    <div key={idx} className="david-price-row">
-                      <div className="david-price-row-top">
-                        <div style={{ display:'flex', alignItems:'center', gap:10, minWidth:0 }}>
-                          {photo && <img className="david-price-avatar" src={photo} alt={name} />}
-                          <div className="david-price-row-title"><strong>{p.title}</strong><span>{name}</span></div>
-                        </div>
-                        <button type="button" className="david-price-row-remove" aria-label="Remove" onClick={() => setWorkforceSelection(prev => prev.filter((_,i)=>i!==idx))}>&times;</button>
-                      </div>
-                      <select value={name} onChange={e => setWorkforceSelection(prev => { const n=[...prev]; n[idx]=e.target.value; return n; })}>
-                        {Object.entries(WORKFORCE_LIBRARY).map(([n,pp]) => <option key={n} value={n}>{pp.title} — {n}</option>)}
-                      </select>
-                      <div className="david-price-figures">
-                        <div className="fig human">Human equivalent<strong>{fmtMoney(mH,currency)}/mo</strong></div>
-                        <div className="fig oi">OI price<strong>{fmtMoney(mOI,currency)}/mo</strong></div>
-                        <div className="fig save">You save<strong>{fmtMoney(mH-mOI,currency)}/mo</strong></div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-              <button type="button" className="oi-btn oi-btn-outline oi-btn-block oi-price-add" onClick={() => { const u=Object.keys(WORKFORCE_LIBRARY).find(n=>!workforceSelection.includes(n)); if(u) setWorkforceSelection(prev=>[...prev,u]); }}>+ Add another OI Consultant</button>
-              <div className="oi-invest-summary">
-                <div className="oi-invest-row oi-invest-head"><span>Total investment</span><span>Monthly</span><span>Annual (-10%)</span></div>
-                <div className="oi-invest-row oi-invest-total"><span>Total monthly investment</span><strong>{fmtMoney(totalOI,currency)}</strong><strong>{fmtMoney(annualOIWithDiscount,currency)}</strong></div>
-              </div>
-              <div className="cr-summary-box" style={{ fontWeight:600 }}>{workforceSelection.length===0?'No OI Consultants selected yet — add one above.':'That\'s '+fmtMoney(totalHuman-totalOI,currency)+' / month less than hiring the human equivalent.'}</div>
-              <div style={{ display:'flex', gap:10, marginBottom:10 }}>
-                <button className="oi-btn oi-btn-blue oi-employ-btn" type="button" onClick={startLoading}>Employ my OI Workforce &rarr;</button>
-              </div>
-              <p className="oi-price-note">No long-term contract. This pricing is fully editable at any time &mdash; swap, add or remove a role whenever you need to.</p>
+              <button type="button" className="oi-btn oi-btn-blue" onClick={startLoading}>Continue <Ico d={ICONS.arrow} size={16} sw={2} /></button>
             </div>
           </div>
 
           {/* Next steps · loading */}
           <div className={'david-screen oi-screen oi-center'+(sc('loading')?' active':'')} data-screen="loading">
             <div className="david-loading">
-              <img className="oi-round-photo" src={PERSONAL_OI_PHOTO} alt="" />
               <div className="david-loading-line">{loadingLine}</div>
               <div className="david-loading-track"><div className="david-loading-fill" style={{ width:loadingPct+'%' }}></div></div>
             </div>
           </div>
 
-          {/* 16 · Let's start working together */}
+          {/* 11 · Let's start working together */}
           <div className={'david-screen oi-screen'+(sc('welcome')?' active':'')} data-screen="welcome">
             <div className="oi-card oi-narrow">
-              <ConsultantHead />
               <h3 className="oi-card-title">Let&rsquo;s start working together</h3>
               <p className="oi-card-sub">Great! Your OI Workforce is ready to go.</p>
               <ul className="oi-check-list">
@@ -1406,10 +1351,9 @@ export default function DavidModal({ isOpen, onClose }: { isOpen: boolean; onClo
                   ))}
                 </div>
               </div>
-              <div style={{ display:'flex', gap:10, marginBottom:10 }}>
+              <div style={{ display:'flex', gap:10 }}>
                 <button type="button" className="oi-btn oi-btn-blue" style={{ flex:1 }} onClick={onClose}>Complete and start <Ico d={ICONS.arrow} size={16} sw={2} /></button>
               </div>
-              <button type="button" className="oi-link-btn" onClick={startPersonalise}>Personalise my Personal OI</button>
             </div>
           </div>
 
