@@ -1038,7 +1038,7 @@
 
   /* 5 · My OI demo */
   .oi-chat-screen{ padding:14px 16px 16px; background:var(--tint-white); height:100%; }
-  .oi-chat-intro{ font-size:12.5px; color:var(--grey); margin:0 4px 10px; }
+  .oi-chat-intro{ font-size:14.5px; color:var(--grey); margin:0 4px 10px; }
   .oi-chat-intro b{ color:var(--navy); }
   .oi-shell{ flex:1; min-height:0; display:flex; background:#fff; border:1px solid var(--line); border-radius:16px; overflow:hidden; box-shadow:0 14px 36px rgba(0,27,92,.08); }
   .oi-shell-side{ width:168px; flex:none; border-right:1px solid var(--line); padding:16px 10px; display:flex; flex-direction:column; gap:2px; overflow:hidden; }
@@ -1068,7 +1068,7 @@
   .oi-chat-log .david-msg{ font-size:13.5px; }
   .oi-chat-next{ text-align:center; padding:10px 0 4px; flex:none; }
   .oi-ask + .oi-chat-next{ margin-top:2px; }
-  .oi-voice{ position:relative; display:flex; align-items:center; justify-content:center; gap:14px; padding:6px 0 18px; flex:none; }
+  .oi-voice{ position:relative; display:flex; align-items:center; justify-content:center; gap:14px; padding:0 0 36px; flex:none; }
   .oi-wave{ display:flex; align-items:center; gap:3px; height:26px; }
   .oi-wave i{ width:3px; height:6px; border-radius:2px; background:#A9C4F5; transition:height .2s ease; }
   .oi-voice.listening .oi-wave i{ background:var(--blue); animation:oiWave 1s ease-in-out infinite; }
@@ -1081,7 +1081,7 @@
   .oi-mic.unsupported{ background:var(--grey); box-shadow:0 0 0 7px rgba(91,100,114,.1), 0 8px 20px rgba(91,100,114,.25); }
   .oi-voice-label.oi-voice-error{ color:#C0392B; font-weight:600; }
   @keyframes oiMicPulse{ 0%,100%{ box-shadow:0 0 0 7px rgba(29,95,212,.12), 0 8px 20px rgba(29,95,212,.35);} 50%{ box-shadow:0 0 0 13px rgba(29,95,212,.06), 0 8px 20px rgba(29,95,212,.35);} }
-  .oi-voice-label{ position:absolute; bottom:0; left:0; right:0; text-align:center; font-size:11.5px; color:var(--darkteal); font-weight:500; }
+  .oi-voice-label{ position:absolute; bottom:8px; left:0; right:0; text-align:center; font-size:11.5px; color:var(--darkteal); font-weight:500; }
   .oi-ask{ display:flex; align-items:center; gap:10px; border:1.5px solid var(--line); border-radius:12px; padding:5px 5px 5px 14px; color:var(--grey); flex:none; }
   .oi-ask:focus-within{ border-color:var(--blue); }
   .oi-ask input{ flex:1; min-width:0; border:none; outline:none; font-size:14px; font-family:'Inter',sans-serif; padding:8px 0; background:transparent; }
@@ -1251,13 +1251,23 @@
   .oi-found-q{ font-size:14px; font-weight:600; color:var(--navy); margin:16px 0 10px; text-align:center; }
   @media (max-width:640px){ .oi-found-card{ grid-template-columns:1fr; } .oi-found-info{ border-right:none; padding-right:0; border-bottom:1px solid var(--line); padding-bottom:12px; } .oi-found-photo-col{ flex-direction:row; } .oi-found-photo{ width:64px; } }
   .oi-org-results{ display:flex; flex-direction:column; gap:6px; max-height:330px; overflow-y:auto; padding-right:2px; }
-  .oi-org-result{ display:flex; align-items:center; gap:12px; width:100%; padding:8px 12px; text-align:left; background:#fff; border:1px solid var(--line); border-radius:12px; color:var(--navy); cursor:pointer; font-family:inherit; transition:border-color .2s ease, background .2s ease; }
-  .oi-org-result:hover{ border-color:var(--blue); background:var(--tint-blue); }
-  .oi-org-result-ico{ display:flex; align-items:center; justify-content:center; width:32px; height:32px; border-radius:50%; background:var(--tint-blue); color:var(--blue); flex:none; }
+  .oi-org-result{ display:flex; flex-direction:column; gap:10px; width:100%; padding:12px 14px; text-align:left; background:#fff; border:1px solid #dadce0; border-radius:12px; color:#202124; cursor:pointer; font-family:Arial,'Roboto',sans-serif; transition:border-color .2s ease, box-shadow .2s ease; }
+  .oi-org-result:hover, .oi-org-result:focus-visible{ border-color:var(--blue); box-shadow:0 1px 6px rgba(32,33,36,.18); outline:none; }
+  .oi-org-result-main{ display:flex; gap:12px; min-width:0; }
+  .oi-org-result-logo{ display:flex; align-items:center; justify-content:center; width:40px; height:40px; border-radius:8px; background:#f1f3f4; border:1px solid #e8eaed; flex:none; overflow:hidden; }
+  .oi-org-result-logo img{ width:24px; height:24px; }
   .oi-org-result-text{ flex:1; min-width:0; display:flex; flex-direction:column; gap:2px; }
-  .oi-org-result-text strong{ font-size:13.5px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-  .oi-org-result-text em{ font-style:normal; font-size:12px; color:var(--blue); }
-  .oi-org-result-text span{ font-size:12px; color:var(--grey); line-height:1.4; display:-webkit-box; -webkit-line-clamp:1; -webkit-box-orient:vertical; overflow:hidden; }
+  .oi-org-result-text strong{ font-size:15px; font-weight:400; color:#1a0dab; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .oi-org-result:hover .oi-org-result-text strong{ text-decoration:underline; }
+  .oi-org-result-meta{ font-size:12.5px; color:#70757a; }
+  .oi-org-result-row{ display:flex; align-items:flex-start; gap:6px; font-size:12.5px; color:#3c4043; line-height:1.4; }
+  .oi-org-result-row svg{ color:#70757a; flex:none; margin-top:2px; }
+  .oi-org-result-desc{ font-size:12.5px; color:#4d5156; line-height:1.45; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+  .oi-org-result-actions{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; padding-left:52px; }
+  .oi-org-result-actions a{ display:inline-flex; align-items:center; gap:5px; padding:5px 12px; border:1px solid #dadce0; border-radius:16px; font-size:12.5px; font-weight:500; color:#1a73e8; text-decoration:none; background:#fff; }
+  .oi-org-result-actions a:hover{ background:#f1f6fe; border-color:#d2e3fc; }
+  .oi-org-result-pick{ margin-left:auto; display:inline-flex; align-items:center; gap:5px; font-size:12.5px; font-weight:600; color:var(--blue); }
+  @media (max-width:640px){ .oi-org-result-actions{ padding-left:0; } }
   .oi-searching{ background:var(--tint-white); border:1px solid var(--line); border-radius:12px; padding:16px; }
   .oi-searching-top{ display:flex; align-items:flex-start; justify-content:space-between; gap:14px; margin-bottom:12px; }
   .oi-searching-top p{ font-size:13.5px; color:var(--navy); line-height:1.5; margin:0; }
@@ -1377,7 +1387,7 @@
   /* 8 · Find your organisation — fit each stage without scrolling; the popup is the card. */
   .oi-panel .oi-screen[data-screen="company"]{ padding:20px 24px; }
   .oi-panel [data-screen="company"] .oi-card{ max-width:none; padding:0; border:none; border-radius:0; box-shadow:none; background:none; }
-  .oi-panel [data-screen="company"] .oi-card-title{ font-size:19px; margin-bottom:4px; }
+  .oi-panel [data-screen="company"] .oi-card-title{ font-size:22px; margin-bottom:4px; }
   .oi-panel [data-screen="company"] .oi-card-sub{ font-size:12.5px; line-height:1.5; margin-bottom:14px; }
   .oi-panel [data-screen="company"] .oi-form-grid{ display:grid; grid-template-columns:1fr 1fr; gap:10px 12px; }
   .oi-panel [data-screen="company"] .oi-row{ gap:4px; }
@@ -1401,7 +1411,7 @@
   /* 9 · Quick questions — fit every question without scrolling; same content, tighter layout; the popup is the card. */
   .oi-panel .oi-screen[data-screen="discovery"]{ padding:18px 24px; }
   .oi-panel [data-screen="discovery"] .oi-card{ max-width:none; padding:0; border:none; border-radius:0; box-shadow:none; background:none; }
-  .oi-panel [data-screen="discovery"] .oi-q-intro{ font-size:16px; font-weight:500; margin-bottom:12px; }
+  .oi-panel [data-screen="discovery"] .oi-q-intro{ font-size:18px; font-weight:500; margin-bottom:12px; }
   .oi-panel [data-screen="discovery"] .oi-q-row{ gap:12px; margin-bottom:12px; }
   .oi-panel [data-screen="discovery"] .oi-q-bubble{ padding:10px 14px; }
   .oi-panel [data-screen="discovery"] .oi-q-bubble .oi-q-count{ font-size:10.5px; margin-bottom:3px; }
@@ -1428,6 +1438,7 @@
   .oi-panel .oi-screen[data-screen="report"]{ padding:16px 24px 18px; }
   .oi-panel [data-screen="report"] .oi-brief-head{ margin-bottom:10px; }
   .oi-panel [data-screen="report"] .david-eyebrow{ text-align:left; margin-bottom:2px; font-size:11.5px; }
+  .oi-panel [data-screen="report"] .oi-brief-head .david-eyebrow{ font-size:15px; }
   .oi-panel [data-screen="report"] .oi-brief-head-sub{ font-size:12px; margin-top:0; }
   .oi-panel [data-screen="report"] .oi-edit-details{ margin:0; padding:2px 0; font-size:12.5px; }
   .oi-panel [data-screen="report"] .oi-brief{ grid-template-columns:1.25fr 1fr; margin-bottom:10px; }
@@ -1447,9 +1458,11 @@
   .oi-panel [data-screen="report"] .oi-brief-actions-row .oi-btn{ padding:10px 14px; font-size:13px; }
   .oi-panel [data-screen="report"] .oi-brief-actions-row + .oi-btn{ padding:12px 18px; }
   /* 10 · the old steps 11–14 stacked under the brief, divided by a rule; the page scrolls. */
-  .oi-panel .oi-report-part{ margin:18px 0; padding-top:18px; border-top:1px solid var(--line); }
+  .oi-panel .oi-report-part{ margin:18px 0; padding:18px 0 0; border-top:1px solid var(--line); } /* padding:0 resets the site-wide section padding */
   .oi-panel .oi-report-part[data-screen="build-workforce"] .david-eyebrow{ text-align:left; }
-  .oi-panel .oi-report-part + .oi-btn{ margin-top:4px; }
+  /* The button stays pinned at the bottom of the popup while the report scrolls behind it. */
+  /* Bottom padding = the screen's own 14px, pulled back with a negative margin, so the button keeps the same gap below it pinned or not. */
+  .oi-panel .oi-report-cta{ position:sticky; bottom:0; z-index:2; margin:4px 0 -14px; padding:14px 0; background:linear-gradient(to bottom, rgba(244,247,252,0), var(--tint-white) 14px); }
   @media (max-width:440px){
     .oi-panel [data-screen="report"] .oi-brief{ grid-template-columns:1fr; } .oi-panel [data-screen="report"] .oi-brief-photo{ min-height:110px; }
     .oi-panel [data-screen="report"] .oi-brief-grid{ grid-template-columns:1fr 1fr; }
@@ -1697,3 +1710,11 @@
   .oi-steps-arrow:hover:not(:disabled){ background:rgba(0,27,92,.08); }
   .oi-steps-arrow:disabled{ opacity:.25; cursor:default; }
   @media (max-width:440px){ .oi-steps{ --dot:24px; --gap:5px; } }
+  /* 10 · Highlight the report's tiles: white cards with a soft blue edge instead of flat grey. */
+  .oi-panel [data-screen="report"] :is(.oi-brief-card, .oi-sevenday-item, .oi-stat-tile, .oi-value-card){
+    background:#fff; border-color:#D3E0F6; box-shadow:0 4px 14px rgba(29,95,212,.08);
+    transition:border-color .2s ease, box-shadow .2s ease, transform .2s ease;
+  }
+  .oi-panel [data-screen="report"] :is(.oi-brief-card, .oi-sevenday-item, .oi-stat-tile, .oi-value-card):hover{
+    border-color:#8DB1EE; box-shadow:0 8px 22px rgba(29,95,212,.16); transform:translateY(-2px);
+  }

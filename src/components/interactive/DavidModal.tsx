@@ -269,6 +269,8 @@ const ICONS = {
   lightbulb: '<path d="M9 18h6M10 22h4M12 2a7 7 0 00-4 12.7c.6.5 1 1.3 1 2.3h6c0-1 .4-1.8 1-2.3A7 7 0 0012 2z"/>',
   question: '<circle cx="12" cy="12" r="10"/><path d="M9.1 9a3 3 0 115.8 1c0 2-3 2-3 4"/><path d="M12 17h.01"/>',
   infinity: '<path d="M7 9a3 3 0 100 6 5 5 0 004-2 5 5 0 004 2 3 3 0 100-6 5 5 0 00-4 2 5 5 0 00-4-2z"/>',
+  phone: '<path d="M22 16.9v3a2 2 0 01-2.2 2 19.8 19.8 0 01-8.6-3.1 19.5 19.5 0 01-6-6A19.8 19.8 0 012.1 4.2 2 2 0 014.1 2h3a2 2 0 012 1.7c.1.9.4 1.8.7 2.7a2 2 0 01-.5 2.1L8 9.8a16 16 0 006 6l1.3-1.3a2 2 0 012.1-.4c.9.3 1.8.6 2.7.7a2 2 0 011.7 2z"/>',
+  directions: '<path d="M12 2l10 10-10 10L2 12z"/><path d="M9 13v-2h5M12 8.5l2.5 2.5L12 13.5"/>',
   link: '<path d="M10 14a4 4 0 005.66 0l3-3a4 4 0 00-5.66-5.66l-1 1"/><path d="M14 10a4 4 0 00-5.66 0l-3 3a4 4 0 005.66 5.66l1-1"/>',
   chart: '<path d="M3 3v18h18"/><path d="M7 15v3M12 11v7M17 7v11"/>',
   target: '<circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="4"/><circle cx="12" cy="12" r="0.5"/>',
@@ -329,6 +331,16 @@ const TOOL_ICONS: Record<string, string> = {
   [OTHER_OPTION]: '<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4z"/>',
   "We don't use many tools yet": '<circle cx="12" cy="12" r="9"/><path d="M9 9l6 6M15 9l-6 6"/>',
 };
+// Step 8 "Also found" sources in their real brand colours (Simple Icons, CC0; the news mark drawn by hand).
+const SOURCE_LOGOS: Record<string, [string, string][]> = {
+  LinkedIn: [['#0A66C2', 'M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z']],
+  Facebook: [['#0866FF', 'M9.101 23.691v-7.98H6.627v-3.667h2.474v-1.58c0-4.085 1.848-5.978 5.858-5.978.401 0 .955.042 1.468.103a8.68 8.68 0 0 1 1.141.195v3.325a8.623 8.623 0 0 0-.653-.036 26.805 26.805 0 0 0-.733-.009c-.707 0-1.259.096-1.675.309a1.686 1.686 0 0 0-.679.622c-.258.42-.374.995-.374 1.752v1.297h3.919l-.386 2.103-.287 1.564h-3.246v8.245C19.396 23.238 24 18.179 24 12.044c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.628 3.874 10.35 9.101 11.647Z']],
+  'X (Twitter)': [['#000000', 'M18.901 1.153h3.68l-8.04 9.19L24 22.846h-7.406l-5.8-7.584-6.638 7.584H.474l8.6-9.83L0 1.154h7.594l5.243 6.932ZM17.61 20.644h2.039L6.486 3.24H4.298Z']],
+  'Company news': [['#F2994A', 'M5 3h11a2 2 0 0 1 2 2v1h1a2 2 0 0 1 2 2v11a3 3 0 0 1-3 3H6a3 3 0 0 1-3-3V5a2 2 0 0 1 2-2z'], ['#FFFFFF', 'M6.5 7h8v3.5h-8zM6.5 12.5h8V14h-8zM6.5 16h8v1.5h-8zM18 8.5h1.5V19a1.5 1.5 0 0 1-1.5 1.5z']],
+};
+function SourceLogo({ name, size = 13 }: { name: string; size?: number }) {
+  return <svg width={size} height={size} viewBox="0 0 24 24" aria-hidden="true">{SOURCE_LOGOS[name].map(([fill, d], i) => <path key={i} fill={fill} d={d} />)}</svg>;
+}
 function BrandLogo({ name }: { name: string }) {
   if (name === 'Microsoft 365') return (
     <svg width="22" height="22" viewBox="0 0 22 22" aria-hidden="true">
@@ -610,8 +622,10 @@ export default function DavidModal({ isOpen, onClose }: { isOpen: boolean; onClo
 
   // ── Step 6: Imagine if ──
   function startMoment() {
-    if (sr.current.momentStarted) return; sr.current.momentStarted = true;
     try { recogRef.current?.stop(); } catch {}
+    // Seen it already (came back to the chat): go straight to the finished step 6 instead of doing nothing.
+    if (sr.current.momentStarted) { nav('moment'); setMomentCount(MOMENT_LINES.length); return; }
+    sr.current.momentStarted = true;
     nav('moment'); setMomentCount(0);
     let idx = 0;
     function next() {
@@ -623,7 +637,7 @@ export default function DavidModal({ isOpen, onClose }: { isOpen: boolean; onClo
   }
 
   // ── Step 8: find the organisation ──
-  // No website given: search the web (OpenAI) and let them pick from up to 3 sites.
+  // No website given: search with Gemini and let them pick from Google Business-style listings.
   function startOrgSearch() {
     const id = ++orgSearchId.current;
     const lookup = company.none || company.website.trim() ? null : searchOrgWebsites(company.company.trim(), company.country);
@@ -1077,13 +1091,26 @@ export default function DavidModal({ isOpen, onClose }: { isOpen: boolean; onClo
               {orgStage === 'pick' && (<>
                 <h3 className="oi-card-title">{orgResults.length === 1 ? 'I found this website.' : 'I found '+orgResults.length+' websites.'}</h3>
                 <p className="oi-card-sub">Which one is {company.company.trim()}?</p>
+                {/* Laid out like a Google Business listing: logo, name, category, address, phone, Website / Directions. */}
                 <div className="oi-org-results">
                   {orgResults.map(r => (
-                    <button key={r.host} type="button" className="oi-org-result" onClick={() => pickOrgResult(r)}>
-                      <span className="oi-org-result-ico"><Ico d={ICONS.link} size={15} /></span>
-                      <span className="oi-org-result-text"><strong>{r.title}</strong><em>{r.host}</em>{r.snippet && <span>{r.snippet}</span>}</span>
-                      <Ico d={ICONS.arrow} size={15} sw={2} />
-                    </button>
+                    <div key={r.host} role="button" tabIndex={0} className="oi-org-result" onClick={() => pickOrgResult(r)} onKeyDown={e => { if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); pickOrgResult(r); } }}>
+                      <div className="oi-org-result-main">
+                        <span className="oi-org-result-logo"><img src={'https://www.google.com/s2/favicons?sz=64&domain=' + r.host} alt="" /></span>
+                        <div className="oi-org-result-text">
+                          <strong>{r.title}</strong>
+                          <span className="oi-org-result-meta">{[r.category, r.host].filter(Boolean).join(' · ')}</span>
+                          {r.address && <span className="oi-org-result-row"><Ico d={ICONS.pin} size={13} />{r.address}</span>}
+                          {r.phone && <span className="oi-org-result-row"><Ico d={ICONS.phone} size={13} />{r.phone}</span>}
+                          {r.snippet && <span className="oi-org-result-desc">{r.snippet}</span>}
+                        </div>
+                      </div>
+                      <div className="oi-org-result-actions">
+                        <a href={r.link} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()}><Ico d={ICONS.link} size={13} />Website</a>
+                        <a href={'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(r.title + (r.address ? ', ' + r.address : company.country ? ', ' + company.country : ''))} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()}><Ico d={ICONS.directions} size={13} />Directions</a>
+                        <span className="oi-org-result-pick">This is us<Ico d={ICONS.arrow} size={13} sw={2} /></span>
+                      </div>
+                    </div>
                   ))}
                 </div>
               </>)}
@@ -1101,18 +1128,16 @@ export default function DavidModal({ isOpen, onClose }: { isOpen: boolean; onClo
                   </div>
                   <div className="oi-found-info">
                     <strong>{orgPick && company.website === orgPick.link ? orgPick.title : company.none ? (sr.current.name !== 'there' ? sr.current.name + '’s future organisation' : 'Your future organisation') : (company.company.trim() || 'Your organisation')}</strong>
-                    <span className="oi-found-meta">{company.industry || sr.current.industry || 'Professional Services'}</span>
-                    <div className="oi-found-row"><Ico d={ICONS.pin} size={14} /><span>{company.country ? (CITY_BY_COUNTRY[company.country] || '') + (CITY_BY_COUNTRY[company.country] ? ', ' : '') + company.country : 'your region'}</span></div>
+                    <span className="oi-found-meta">{(orgPick && company.website === orgPick.link && orgPick.category) || company.industry || sr.current.industry || 'Professional Services'}</span>
+                    <div className="oi-found-row"><Ico d={ICONS.pin} size={14} /><span>{orgPick && company.website === orgPick.link && orgPick.address ? orgPick.address : company.country ? (CITY_BY_COUNTRY[company.country] || '') + (CITY_BY_COUNTRY[company.country] ? ', ' : '') + company.country : 'your region'}</span></div>
+                    {orgPick && company.website === orgPick.link && orgPick.phone && <div className="oi-found-row"><Ico d={ICONS.phone} size={14} /><span>{orgPick.phone}</span></div>}
                     {!company.none && company.website.trim() && <div className="oi-found-row"><Ico d={ICONS.link} size={14} /><span>{company.website}</span></div>}
                     <p className="oi-found-desc">{orgPick && company.website === orgPick.link && orgPick.snippet ? orgPick.snippet : <>{(company.none ? (sr.current.name !== 'there' ? sr.current.name + '’s future organisation' : 'Your future organisation') : (company.company.trim() || 'Your organisation'))} operates in the {(company.industry || sr.current.industry || 'professional services').toLowerCase()} sector, based in {company.country ? (CITY_BY_COUNTRY[company.country] || company.country) : 'your region'}{company.country ? ', ' + company.country : ''}.</>}</p>
                   </div>
                   <div className="oi-found-also-col">
                     <div className="oi-found-also">Also found</div>
                     <div className="oi-found-tags">
-                      <span className="oi-chip-sm"><Ico d={ICONS.briefcase} size={13} />LinkedIn</span>
-                      <span className="oi-chip-sm"><Ico d={ICONS.people} size={13} />Facebook</span>
-                      <span className="oi-chip-sm"><Ico d={ICONS.bolt} size={13} />X (Twitter)</span>
-                      <span className="oi-chip-sm"><Ico d={ICONS.file} size={13} />Company news</span>
+                      {Object.keys(SOURCE_LOGOS).map(n => <span key={n} className="oi-chip-sm"><SourceLogo name={n} />{n}</span>)}
                     </div>
                   </div>
                 </div>
@@ -1300,7 +1325,9 @@ export default function DavidModal({ isOpen, onClose }: { isOpen: boolean; onClo
                   </div>
                 </section>
 
-                <button type="button" className="oi-btn oi-btn-blue oi-btn-block" onClick={startLoading}>Employ my OI Workforce <Ico d={ICONS.arrow} size={16} sw={2} /></button>
+                <div className="oi-report-cta">
+                  <button type="button" className="oi-btn oi-btn-blue oi-btn-block" onClick={startLoading}>Employ my OI Workforce <Ico d={ICONS.arrow} size={16} sw={2} /></button>
+                </div>
               </div>
             )}
           </div>

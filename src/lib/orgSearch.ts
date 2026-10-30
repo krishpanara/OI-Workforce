@@ -1,7 +1,8 @@
 // Step 8: find an organisation's own website(s) with Google Gemini (free key from aistudio.google.com).
 // Google Search grounding isn't in the free tier, so Gemini answers from what it knows and each site is checked to exist.
 // The key is NEXT_PUBLIC_, so it ships in the page — fine for a free-tier key, never use a billed one here.
-export type OrgResult = { title: string; link: string; host: string; snippet: string };
+// category / address / phone fill the Google Business-style listing card; empty when Gemini doesn't know them.
+export type OrgResult = { title: string; link: string; host: string; snippet: string; category?: string; address?: string; phone?: string };
 
 const API_KEY = process.env.NEXT_PUBLIC_GEMINI_API_KEY || '';
 // Tried in order: the best free model first, the lite one when it's busy (503) or rate-limited (429).
@@ -13,8 +14,8 @@ const MAX_RESULTS = 10;
 const RESULT_SCHEMA = {
   type: 'OBJECT', required: ['results'],
   properties: { results: { type: 'ARRAY', items: {
-    type: 'OBJECT', required: ['title', 'url', 'description'],
-    properties: { title: { type: 'STRING' }, url: { type: 'STRING' }, description: { type: 'STRING' } },
+    type: 'OBJECT', required: ['title', 'url', 'description', 'category', 'address', 'phone'],
+    properties: { title: { type: 'STRING' }, url: { type: 'STRING' }, description: { type: 'STRING' }, category: { type: 'STRING' }, address: { type: 'STRING' }, phone: { type: 'STRING' } },
   } } },
 };
 
@@ -68,7 +69,7 @@ async function generate(prompt: string): Promise<Response | null> {
 // Every matching organisation's official website (up to MAX_RESULTS); [] when nothing is found, no key is set, or the search fails.
 export async function searchOrgWebsites(name: string, country: string): Promise<OrgResult[]> {
   if (!name || !API_KEY) return [];
-  const key = 'orgSearch:' + name.toLowerCase() + '|' + country;
+  const key = 'orgSearch2:' + name.toLowerCase() + '|' + country;
   try { const hit = sessionStorage.getItem(key); if (hit) return JSON.parse(hit) as OrgResult[]; } catch {}
   const results = await fetchOrgWebsites(name, country);
   // Only cache real answers, so a failed search can be retried.
@@ -79,7 +80,9 @@ export async function searchOrgWebsites(name: string, country: string): Promise<
 async function fetchOrgWebsites(name: string, country: string): Promise<OrgResult[]> {
   const prompt = 'Find the official website of the organisation named "' + name + '"' + (country ? ' in ' + country : '') + '. '
     + 'Several different organisations may share this name: list every real one you know of, each with its own official website, best match first (at most ' + MAX_RESULTS + '). '
-    + 'For each give the organisation name as title, its official website url, and a one-sentence description of what it does and where it is based. '
+    + 'For each give the organisation name as title, its official website url, and a one-sentence description of what it does and where it is based, '
+    + 'its business category as Google Maps shows it (e.g. "Software company", "Hospital", "University"), the street address of its head office, and its main phone number in international format. '
+    + 'Leave address or phone as an empty string if you are not sure of them. '
     + 'Do not return social media, directories, news articles or Wikipedia. Only include organisations and websites you are confident are real; never guess a url. '
     + 'If you do not know any organisation with this name, return an empty list.';
   try {
@@ -87,13 +90,13 @@ async function fetchOrgWebsites(name: string, country: string): Promise<OrgResul
     if (!res?.ok) return [];
     const json = outputText(await res.json()).match(/\{[\s\S]*\}/);
     if (!json) return [];
-    const items = (JSON.parse(json[0]).results || []) as { title?: string; url?: string; description?: string }[];
+    const items = (JSON.parse(json[0]).results || []) as { title?: string; url?: string; description?: string; category?: string; address?: string; phone?: string }[];
     const seen = new Set<string>(); const results: OrgResult[] = [];
     for (const item of items) {
       const host = item.url ? hostOf(item.url) : null;
       if (!host || seen.has(host) || !isOwnSite(host)) continue;
       seen.add(host);
-      results.push({ title: item.title || host, link: 'https://' + host, host, snippet: item.description || '' });
+      results.push({ title: item.title || host, link: 'https://' + host, host, snippet: item.description || '', category: item.category?.trim(), address: item.address?.trim(), phone: item.phone?.trim() });
       if (results.length === MAX_RESULTS) break;
     }
     const exists = await Promise.all(results.map(r => siteExists(r.host)));
