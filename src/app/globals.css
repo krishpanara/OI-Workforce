@@ -1224,6 +1224,16 @@
 
   /* 7 · How it works */
   .oi-howitworks{ margin-bottom:18px; }
+  /* 11 · the account just created on Hyphen Labs */
+  .oi-account{ background:var(--tint-blue); border:1px solid #D3E0F6; border-radius:12px; padding:12px 14px; margin:0 0 16px; }
+  .oi-account-title{ font-size:12px; font-weight:600; color:var(--navy); margin-bottom:8px; }
+  .oi-account-row{ display:flex; align-items:center; gap:10px; font-size:13px; color:var(--navy); padding:3px 0; }
+  .oi-account-row > span{ width:70px; flex:none; color:var(--grey); font-size:12px; }
+  .oi-account-row strong{ font-weight:600; overflow-wrap:anywhere; }
+  .oi-account-pass{ font-family:ui-monospace,Consolas,monospace; letter-spacing:.5px; }
+  .oi-account-row .oi-link-btn{ margin-left:auto; padding:0; }
+  .oi-account-note{ font-size:11.5px; color:var(--grey); margin:6px 0 0; line-height:1.45; }
+  .oi-reg-error{ text-align:left; }
   .oi-howitworks-title{ font-family:'Manrope',sans-serif; font-weight:700; font-size:13px; color:var(--navy); margin-bottom:10px; }
   .oi-step-row{ display:flex; align-items:flex-start; gap:12px; padding:10px 0; border-bottom:1px solid var(--line); }
   .oi-step-row:last-child{ border-bottom:none; }
@@ -1242,6 +1252,9 @@
   .oi-found-meta{ display:block; font-size:12.5px; color:var(--grey); margin-bottom:8px; }
   .oi-found-row{ display:flex; align-items:center; gap:6px; font-size:12px; color:#31394A; margin-bottom:4px; }
   .oi-found-row svg{ color:var(--blue); flex:none; }
+  .oi-found-row a{ color:inherit; text-decoration:none; overflow-wrap:anywhere; }
+  .oi-found-row a:hover{ color:var(--blue); text-decoration:underline; }
+  .oi-found-tags a.oi-chip-sm{ text-decoration:none; color:inherit; }
   .oi-found-desc{ font-size:11.5px; color:var(--grey); line-height:1.5; margin-top:8px; }
   .oi-found-also-col{ min-width:0; }
   .oi-found-also{ font-size:10.5px; font-weight:700; text-transform:uppercase; letter-spacing:.04em; color:var(--grey); margin-bottom:8px; }

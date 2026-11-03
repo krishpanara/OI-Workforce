@@ -1,7 +1,7 @@
-/** @type {import('next').NextConfig} */
-const nextConfig = {
-  output: 'export',
-  images: { unoptimized: true },
-};
+const { PHASE_DEVELOPMENT_SERVER } = require('next/constants');
 
-module.exports = nextConfig;
+/** @type {(phase: string) => import('next').NextConfig} */
+module.exports = (phase) => phase === PHASE_DEVELOPMENT_SERVER
+  // Dev also loads *.dev.ts routes: the /api/hyphen proxy (worker.js does that job in production).
+  ? { images: { unoptimized: true }, pageExtensions: ['tsx', 'ts', 'jsx', 'js', 'dev.ts'] }
+  : { output: 'export', images: { unoptimized: true } };

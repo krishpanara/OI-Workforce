@@ -1,6 +1,9 @@
 'use client';
 import { useState, useRef, useEffect, type CSSProperties } from 'react';
-import { searchOrgWebsites, type OrgResult } from '@/lib/orgSearch';
+import type { OrgResult } from '@/lib/orgSearch';
+import { findOrgs, lookupOrgProfile, type OrgProfile } from '@/lib/orgLookup';
+import { registerAccount, type RegisterPayload, type RegisterResult } from '@/lib/hyphenRegister';
+import { fetchIndustryTypes, fetchRoleCatalog, type IndustryType } from '@/lib/hyphenCatalog';
 import { IMAGES } from '@/lib/images';
 import { useBodyScrollLock } from '@/hooks/useBodyScrollLock';
 
@@ -211,10 +214,6 @@ const HIGH_STAKES = ['Legal','Healthcare','Mining','Construction'];
 const SMALL_SIZES = ['1–10','11–50'];
 const LARGE_SIZES = ['251–1,000','1,000+'];
 const COUNTRY_OPTIONS = ['Ghana','Nigeria','Kenya','South Africa','United Kingdom','Ireland','United States','Canada','India','United Arab Emirates','Other'];
-const CITY_BY_COUNTRY: Record<string, string> = {
-  Ghana: 'Accra', Nigeria: 'Lagos', Kenya: 'Nairobi', 'South Africa': 'Johannesburg', 'United Kingdom': 'London',
-  Ireland: 'Dublin', 'United States': 'New York', Canada: 'Toronto', India: 'Mumbai', 'United Arab Emirates': 'Dubai',
-};
 
 const INDUSTRY_ICONS: Record<string, string> = {
   Banking: '<path d="M3 21h18M4 21V10M20 21V10M3 10l9-6 9 6M7 10v11M12 10v11M17 10v11"/>',
@@ -241,6 +240,17 @@ const FEATURED_INDUSTRIES: { key: string; label: string; photo: string }[] = [
   { key: 'Construction', label: 'Construction & Property', photo: '/images/industries/construction.jpg' },
 ];
 const INDUSTRY_PHOTOS: Record<string, string> = Object.fromEntries(FEATURED_INDUSTRIES.map(i => [i.key, i.photo]));
+// Hyphen Labs industry slug → this file's industry key (demo company, departments, hooks…); an unknown slug uses its name and the Professional Services defaults.
+const INDUSTRY_BY_SLUG: Record<string, string> = {
+  restaurants: 'Restaurants', banking_financial: 'Banking', legal_professional: 'Legal', healthcare: 'Healthcare', manufacturing: 'Manufacturing',
+  construction_property: 'Construction', fmcg: 'FMCG', insurance: 'Insurance', retail: 'Retail', hospitality: 'Hospitality',
+  professional_services: 'Professional Services', education: 'Education', mining: 'Mining',
+};
+// Hyphen Labs catalog role → the demo position whose chat prompts it gets first.
+const PROMPTS_FOR_ROLE: Record<string, string> = {
+  'Org Admin': 'CEO', 'Finance Officer': 'Finance Manager', 'HR Officer': 'HR Manager', Manager: 'Operations Manager',
+  'Department Head': 'Operations Manager', 'Team Lead': 'Operations Manager', 'Legal Officer': 'CEO',
+};
 const OFFICE_PHOTO = '/images/industries/office.jpg';
 
 const ICONS = {
@@ -436,6 +446,9 @@ export default function DavidModal({ isOpen, onClose }: { isOpen: boolean; onClo
   const [selIndustry, setSelIndustry] = useState('');
   const [showAllIndustries, setShowAllIndustries] = useState(false);
   const [selRole, setSelRole] = useState('');
+  // Industries and roles from the Hyphen Labs API; empty until loaded (or if it fails), when the built-in lists show instead.
+  const [apiIndustries, setApiIndustries] = useState<IndustryType[]>([]);
+  const [apiRoles, setApiRoles] = useState<string[]>([]);
   const [chatMsgs, setChatMsgs] = useState<ChatMsg[]>([]);
   const [continueVisible, setContinueVisible] = useState(false);
   const [askLocked, setAskLocked] = useState(false);
@@ -449,7 +462,13 @@ export default function DavidModal({ isOpen, onClose }: { isOpen: boolean; onClo
   const [orgResults, setOrgResults] = useState<OrgResult[]>([]);
   const orgSearchId = useRef(0);
   const pickedSite = useRef('');
+  // Account creation on "Employ my OI Workforce": one Idempotency-Key per popup session, so a retry can't make a second account.
+  const [reg, setReg] = useState<{ status: 'idle' | 'pending' | 'done' | 'error'; message?: string; result?: RegisterResult }>({ status: 'idle' });
+  const regKey = useRef('');
+  const regAttempt = useRef(0);
   const [orgPick, setOrgPick] = useState<OrgResult | null>(null);
+  // The organisation's real details (its website + web search) for the "I think I've found you" card; null with no company.
+  const [orgProfile, setOrgProfile] = useState<OrgProfile | null>(null);
   const [orgPct, setOrgPct] = useState(0);
   const [discIdx, setDiscIdx] = useState(0);
   const [discSel, setDiscSel] = useState<string[]>([]);
@@ -501,13 +520,22 @@ export default function DavidModal({ isOpen, onClose }: { isOpen: boolean; onClo
   }, [isOpen, onClose]);
 
   useEffect(() => {
+    if (!isOpen) return;
+    let live = true;
+    fetchIndustryTypes().then(list => { if (live) setApiIndustries([...list].sort((a, b) => a.sortOrder - b.sortOrder)); });
+    fetchRoleCatalog().then(list => { if (live) setApiRoles([...new Set(list.map(r => r.displayName))]); });
+    return () => { live = false; };
+  }, [isOpen]);
+
+  useEffect(() => {
     if (isOpen) {
       setScreen('intro'); screenRef.current = 'intro'; setCompleted(new Set()); setStepWin(0); setSlideDir('fwd'); historyRef.current = []; setSignup({ firstName: '', lastName: '', email: '', phone: '' }); setSelIndustry(''); setShowAllIndustries(false); setSelRole('');
       setChatMsgs([]); setContinueVisible(false); setListening(false); setMicMessage(''); setMomentCount(0);
       setInvite({ name: '', email: '', sent: false }); setCompany({ company: '', website: '', email: '', industry: '', country: '', size: '', role: '', none: false });
-      setOrgStage('form'); setOrgPct(0);
+      setOrgStage('form'); setOrgPct(0); setOrgProfile(null);
       setDiscIdx(0); setDiscSel([]); setOtherText(''); setLoadingLine(''); setLoadingPct(0); setWorkforceSelection([]);
       setVoiceGender(''); setAvatarPhotoSel(null); setPersonalName(''); setPersonalStyle(''); setShowAvatarSection(false); setCrData(null);
+      setReg({ status: 'idle' }); regKey.current = 'oi-popup-' + (globalThis.crypto?.randomUUID?.() || Date.now().toString(36) + Math.random().toString(36).slice(2));
       setVoiceOn(false); voiceOnRef.current = false; try { if (hasSpeech) speechSynthesis.cancel(); } catch {}
       sr.current = { name: '', lastName: '', email: '', phone: '', password: '', industry: '', position: '', orgAnswers: {}, chatCount: 0, mockBusiness: null, momentStarted: false, activeQuestions: [], usedResponses: new Set() };
     }
@@ -543,10 +571,15 @@ export default function DavidModal({ isOpen, onClose }: { isOpen: boolean; onClo
   }
 
   // ── Steps 1–4: meet, industry, demo company, role ──
+  // 12 characters with at least one upper, lower, digit and symbol (it becomes the real account password), from the secure RNG.
   function genPassword(): string {
-    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789';
-    let s = ''; for (let i = 0; i < 10; i++) s += chars[Math.floor(Math.random() * chars.length)];
-    return s;
+    const sets = ['ABCDEFGHJKLMNPQRSTUVWXYZ', 'abcdefghijkmnpqrstuvwxyz', '23456789', '@#$%&*!?'];
+    const all = sets.join('');
+    const rnd = (n: number) => { const a = new Uint32Array(1); crypto.getRandomValues(a); return a[0] % n; };
+    const chars = sets.map(s => s[rnd(s.length)]);
+    while (chars.length < 12) chars.push(all[rnd(all.length)]);
+    for (let i = chars.length - 1; i > 0; i--) { const j = rnd(i + 1); [chars[i], chars[j]] = [chars[j], chars[i]]; }
+    return chars.join('');
   }
   function submitSignup() {
     sr.current.name = signup.firstName.trim() || 'there';
@@ -638,27 +671,41 @@ export default function DavidModal({ isOpen, onClose }: { isOpen: boolean; onClo
 
   // ── Step 8: find the organisation ──
   // No website given: search with Gemini and let them pick from Google Business-style listings.
-  function startOrgSearch() {
+  // Show the searching bar while `task` runs (at least ~1.6s, creeping towards 95%), then hand over its result unless a newer search started.
+  function runOrgTask<T>(task: Promise<T>, then: (v: T) => void) {
     const id = ++orgSearchId.current;
-    const lookup = company.none || company.website.trim() ? null : searchOrgWebsites(company.company.trim(), company.country);
-    setOrgStage('searching'); setOrgPct(0); let idx = 0; const steps = 5;
-    function done() {
-      if (!lookup) { setOrgStage('found'); return; }
-      lookup.then(results => {
-        if (id !== orgSearchId.current) return;
-        setOrgResults(results); setOrgStage(results.length ? 'pick' : 'none');
-      });
+    setOrgStage('searching'); setOrgPct(0);
+    let pct = 0; let ready = false; let value: T;
+    task.then(v => { value = v; ready = true; });
+    function step() {
+      if (id !== orgSearchId.current) return;
+      pct = Math.min(95, pct + (pct < 60 ? 12 : 3)); setOrgPct(pct);
+      if (ready && pct >= 60) { later(() => { if (id === orgSearchId.current) then(value); }, 250); return; }
+      later(step, 320);
     }
-    function step() { idx++; setOrgPct(Math.min(95, Math.round((idx/steps)*100))); if (idx>=steps) { later(done, 350); return; } later(step, 320); }
     step();
   }
-  function pickOrgResult(r: OrgResult) { pickedSite.current = r.link; setOrgPick(r); setCompany(c => ({ ...c, website: r.link })); setOrgStage('found'); }
+  // No website given: list the matching organisations to pick from. Website given: read it straight away.
+  function startOrgSearch() {
+    const name = company.company.trim(), site = company.website.trim();
+    if (company.none) { setOrgProfile(null); setOrgStage('found'); return; }
+    if (site) { runOrgTask(lookupOrgProfile(site, name, company.country), p => { setOrgProfile(p); setOrgStage('found'); }); return; }
+    runOrgTask(findOrgs(name, company.country), results => { setOrgResults(results); setOrgStage(results.length ? 'pick' : 'none'); });
+  }
+  function pickOrgResult(r: OrgResult) {
+    pickedSite.current = r.link; setOrgPick(r); setCompany(c => ({ ...c, website: r.link }));
+    // The search listing fills anything the website doesn't say.
+    runOrgTask(lookupOrgProfile(r.link, r.title, company.country, { category: r.category, address: r.address, phone: r.phone }), p => {
+      setOrgProfile({ ...p, name: p.name || r.title, category: p.category || r.category || '', address: p.address || r.address || '', phone: p.phone || r.phone || '', description: p.description || r.snippet });
+      setOrgStage('found');
+    });
+  }
   // A website filled in from search results belongs to that name: clear it when the name changes so the next name is searched.
-  function setOrgName(name: string) { setOrgPick(null); setCompany(c => ({ ...c, company: name, website: c.website && c.website === pickedSite.current ? '' : c.website })); }
+  function setOrgName(name: string) { setOrgPick(null); setOrgProfile(null); setCompany(c => ({ ...c, company: name, website: c.website && c.website === pickedSite.current ? '' : c.website })); }
   function orgTryAgain() { orgSearchId.current++; setOrgStage('form'); }
   function submitCompany() {
     const a = sr.current.orgAnswers;
-    a.company = company.none ? (sr.current.name !== 'there' ? sr.current.name + '’s future organisation' : 'Your future organisation') : (company.company.trim() || 'Your organisation');
+    a.company = company.none ? (sr.current.name !== 'there' ? sr.current.name + '’s future organisation' : 'Your future organisation') : (company.company.trim() || orgProfile?.name || 'Your organisation');
     a.website = company.none ? '' : company.website.trim();
     if (company.industry) sr.current.industry = company.industry;
     a.country = company.country || 'your region';
@@ -762,9 +809,48 @@ export default function DavidModal({ isOpen, onClose }: { isOpen: boolean; onClo
     return 'Takes the coordination off your plate, so you can focus on '+(obj[0] ? 'what you flagged: '+obj[0].toLowerCase() : 'your top priority')+'.';
   }
   function growingRevenue(a: Record<string,string|string[]>) { return hasAnswer(a,'goals','Grow revenue'); }
+  // ── Create the account (Hyphen Labs /reg/register) from everything gathered in steps 1–9 ──
+  function registrationPayload(): RegisterPayload {
+    const a = sr.current.orgAnswers; const ind = sr.current.industry || 'Professional Services';
+    const slug = Object.keys(INDUSTRY_BY_SLUG).find(s => INDUSTRY_BY_SLUG[s] === ind) || apiIndustries.find(i => i.name === ind)?.slug || ind.toLowerCase().replace(/[^a-z0-9]+/g, '_');
+    // Only the quick-question answers that were actually given.
+    const answers = Object.fromEntries(DISCOVERY_QUESTIONS.map(q => [q.key, a[q.key]] as const).filter(([, v]) => Array.isArray(v) ? v.length : typeof v === 'string' && v.trim())) as Record<string, string | string[]>;
+    const site = !company.none && company.website.trim();
+    if (!sr.current.password) sr.current.password = genPassword();
+    return {
+      first_name: signup.firstName.trim(), last_name: signup.lastName.trim(), email: signup.email.trim(),
+      ...(signup.phone.trim() ? { phone: signup.phone.trim() } : {}),
+      password: sr.current.password, industry: slug,
+      position: sr.current.position ? posLabel(ind, sr.current.position) : '',
+      organisation: {
+        name: String(a.company || '') || company.company.trim() || orgProfile?.name || futureOrgName,
+        // The API only takes its own country list (the same as the form's), so a blank one is left out.
+        ...(COUNTRY_OPTIONS.includes(company.country) ? { country: company.country } : {}),
+        ...(site ? { website: /^https?:\/\//i.test(site) ? site : 'https://' + site } : {}),
+      },
+      answers,
+    };
+  }
+  // Resolves true once the account exists. Same details → same Idempotency-Key, so retries are safe; changed details get a new key.
+  function createAccount(): Promise<boolean> {
+    if (reg.status === 'done') return Promise.resolve(true);
+    const payload = registrationPayload();
+    const body = JSON.stringify(payload); let h = 0; for (let i = 0; i < body.length; i++) h = (h * 31 + body.charCodeAt(i)) | 0;
+    setReg({ status: 'pending' });
+    return registerAccount(payload, regKey.current + '-' + (h >>> 0).toString(36) + '-' + regAttempt.current).then(r => {
+      // A clear 4xx means nothing was created, so the next try gets a fresh key (the server may remember this answer for the old one).
+      // No answer (network) or 5xx keeps the key: the account might exist, and the same key stops a duplicate.
+      if (!r.ok && r.status >= 400 && r.status < 500) regAttempt.current++;
+      setReg(r.ok ? { status: 'done', result: r.data } : { status: 'error', message: r.message });
+      return r.ok;
+    });
+  }
   function startLoading() {
-    nav('loading'); let idx = 0;
-    function step() { if (idx>=LOADING_LINES.length) { later(startWelcome,500); return; } setLoadingLine(LOADING_LINES[idx]); setLoadingPct(Math.round(((idx+1)/LOADING_LINES.length)*100)); idx++; later(step,750); }
+    nav('loading'); let idx = 0; let ok: boolean | null = null;
+    createAccount().then(v => { ok = v; });
+    // The loading lines play while the account is created; the welcome screen only opens once it exists.
+    function step() { if (idx>=LOADING_LINES.length) { waitForAccount(); return; } setLoadingLine(LOADING_LINES[idx]); setLoadingPct(Math.round(((idx+1)/LOADING_LINES.length)*100)); idx++; later(step,750); }
+    function waitForAccount() { if (ok === null) { later(waitForAccount, 300); return; } if (ok) later(startWelcome, 500); }
     step();
   }
   function startWelcome() { nav('welcome'); speak('Welcome, '+sr.current.name+". Everything's ready. I'm looking forward to working with you."); }
@@ -779,7 +865,7 @@ export default function DavidModal({ isOpen, onClose }: { isOpen: boolean; onClo
       const ind = sr.current.industry || 'Professional Services';
       sr.current.industry = ind; sr.current.mockBusiness = MOCK_BUSINESSES[ind] || MOCK_BUSINESSES['Professional Services']; setSelIndustry(ind);
     }
-    if (n >= 5 && !sr.current.position) { sr.current.position = POSITION_OPTIONS[0]; setSelRole(POSITION_OPTIONS[0]); }
+    if (n >= 5 && !sr.current.position) { sr.current.position = roleOptions[0]; setSelRole(roleOptions[0]); }
     if (n >= 10) populateWorkforce();
     jumpingRef.current = true;
     switch (n) {
@@ -808,7 +894,14 @@ export default function DavidModal({ isOpen, onClose }: { isOpen: boolean; onClo
   const biz = sr.current.mockBusiness;
   const currentDiscQ = sr.current.activeQuestions[discIdx];
   const discNeedsOther = !currentDiscQ?.freeText && discSel.includes(OTHER_OPTION) && !otherText.trim();
-  const quickPrompts = [...RESPONSES.filter(r => r.roles.includes(sr.current.position)), ...RESPONSES.filter(r => !r.roles.includes(sr.current.position))].slice(0,4);
+  const futureOrgName = sr.current.name && sr.current.name !== 'there' ? sr.current.name + '’s future organisation' : 'Your future organisation';
+  // Step 2 from the API: industries with a photo are the tiles, the rest sit behind "More industries". Built-in lists until it loads.
+  const apiIndustry = (i: IndustryType) => ({ key: INDUSTRY_BY_SLUG[i.slug] || i.name, label: i.name, photo: i.imageUrl || '' });
+  const industryTiles = apiIndustries.length ? apiIndustries.filter(i => i.imageUrl).map(apiIndustry) : FEATURED_INDUSTRIES;
+  const moreIndustries = apiIndustries.length ? apiIndustries.filter(i => !i.imageUrl).map(apiIndustry) : Object.keys(INDUSTRY_ICONS).filter(k => !INDUSTRY_PHOTOS[k]).map(k => ({ key: k, label: k, photo: '' }));
+  const roleOptions = apiRoles.length ? apiRoles : POSITION_OPTIONS;
+  const promptRole = PROMPTS_FOR_ROLE[sr.current.position] || sr.current.position;
+  const quickPrompts = [...RESPONSES.filter(r => r.roles.includes(promptRole)), ...RESPONSES.filter(r => !r.roles.includes(promptRole))].slice(0,4);
   const stepNum = SCREEN_STEP[screen] || STEP_LABELS.length;
   const isNextSteps = !SCREEN_STEP[screen];
   const canGoBack = screen === 'discovery' || (!TRANSIENT_SCREENS.has(screen) && historyRef.current.length > 0);
@@ -884,7 +977,7 @@ export default function DavidModal({ isOpen, onClose }: { isOpen: boolean; onClo
               <p>What type of organisation would you like to play with?</p>
             </div>
             <div className="oi-industry-grid">
-              {FEATURED_INDUSTRIES.map(ind => (
+              {industryTiles.map(ind => (
                 <button key={ind.key} type="button" className={'oi-industry-tile'+(selIndustry===ind.key?' selected':'')} onClick={() => pickIndustry(ind.key)}>
                   <span className="oi-industry-photo" style={{ backgroundImage: 'url('+ind.photo+')' }}>{selIndustry===ind.key && <span className="oi-tick"><Ico d={ICONS.check} size={13} sw={3} /></span>}</span>
                   <span className="oi-industry-label"><Ico d={INDUSTRY_ICONS[ind.key]} size={20} /><span>{ind.label}</span></span>
@@ -895,8 +988,8 @@ export default function DavidModal({ isOpen, onClose }: { isOpen: boolean; onClo
               <button type="button" className="oi-link-btn" onClick={() => setShowAllIndustries(true)}>More industries</button>
             ) : (
               <div className="oi-chip-grid">
-                {Object.keys(INDUSTRY_ICONS).filter(k => !INDUSTRY_PHOTOS[k]).map(ind => (
-                  <button key={ind} type="button" className={'oi-chip'+(selIndustry===ind?' selected':'')} onClick={() => pickIndustry(ind)}><Ico d={INDUSTRY_ICONS[ind]} size={16} />{ind}</button>
+                {moreIndustries.map(ind => (
+                  <button key={ind.key} type="button" className={'oi-chip'+(selIndustry===ind.key?' selected':'')} onClick={() => pickIndustry(ind.key)}><Ico d={INDUSTRY_ICONS[ind.key] || ICONS.briefcase} size={16} />{ind.label}</button>
                 ))}
               </div>
             )}
@@ -935,7 +1028,7 @@ export default function DavidModal({ isOpen, onClose }: { isOpen: boolean; onClo
               <p>What role would you like to take at {biz?.name || 'your demo organisation'}?</p>
             </div>
             <div className="oi-role-grid">
-              {POSITION_OPTIONS.map(pos => (
+              {roleOptions.map(pos => (
                 <button key={pos} type="button" className={'oi-role'+(selRole===pos?' selected':'')} onClick={() => pickPosition(pos)}>{posLabel(sr.current.industry, pos)}</button>
               ))}
             </div>
@@ -1121,25 +1214,31 @@ export default function DavidModal({ isOpen, onClose }: { isOpen: boolean; onClo
               </>)}
               {orgStage === 'found' && (<>
                 <h3 className="oi-card-title">I think I&rsquo;ve found you.</h3>
+                {/* Only what was really found on the organisation's website or the web; anything unknown is left out, never guessed. */}
                 <div className="oi-found-card">
                   <div className="oi-found-photo-col">
-                    <div className="oi-found-photo" style={{ backgroundImage: 'url('+(INDUSTRY_PHOTOS[company.industry || sr.current.industry] || OFFICE_PHOTO)+')' }}></div>
-                    <span>{(company.none ? (sr.current.name !== 'there' ? sr.current.name + '’s future organisation' : 'Your future organisation') : (company.company.trim() || 'Your organisation')).toUpperCase()}</span>
+                    <div className="oi-found-photo" style={{ backgroundImage: (orgProfile?.image ? 'url("'+orgProfile.image+'"), ' : '')+'url("'+(INDUSTRY_PHOTOS[company.industry || sr.current.industry] || OFFICE_PHOTO)+'")' }}></div>{/* the site's own image, over a stock photo in case it fails to load */}
+                    <span>{(orgProfile?.name || futureOrgName).toUpperCase()}</span>
                   </div>
                   <div className="oi-found-info">
-                    <strong>{orgPick && company.website === orgPick.link ? orgPick.title : company.none ? (sr.current.name !== 'there' ? sr.current.name + '’s future organisation' : 'Your future organisation') : (company.company.trim() || 'Your organisation')}</strong>
-                    <span className="oi-found-meta">{(orgPick && company.website === orgPick.link && orgPick.category) || company.industry || sr.current.industry || 'Professional Services'}</span>
-                    <div className="oi-found-row"><Ico d={ICONS.pin} size={14} /><span>{orgPick && company.website === orgPick.link && orgPick.address ? orgPick.address : company.country ? (CITY_BY_COUNTRY[company.country] || '') + (CITY_BY_COUNTRY[company.country] ? ', ' : '') + company.country : 'your region'}</span></div>
-                    {orgPick && company.website === orgPick.link && orgPick.phone && <div className="oi-found-row"><Ico d={ICONS.phone} size={14} /><span>{orgPick.phone}</span></div>}
-                    {!company.none && company.website.trim() && <div className="oi-found-row"><Ico d={ICONS.link} size={14} /><span>{company.website}</span></div>}
-                    <p className="oi-found-desc">{orgPick && company.website === orgPick.link && orgPick.snippet ? orgPick.snippet : <>{(company.none ? (sr.current.name !== 'there' ? sr.current.name + '’s future organisation' : 'Your future organisation') : (company.company.trim() || 'Your organisation'))} operates in the {(company.industry || sr.current.industry || 'professional services').toLowerCase()} sector, based in {company.country ? (CITY_BY_COUNTRY[company.country] || company.country) : 'your region'}{company.country ? ', ' + company.country : ''}.</>}</p>
+                    <strong>{orgProfile?.name || futureOrgName}</strong>
+                    {orgProfile?.category && <span className="oi-found-meta">{orgProfile.category}</span>}
+                    {orgProfile?.address && <div className="oi-found-row"><Ico d={ICONS.pin} size={14} /><span>{orgProfile.address}</span></div>}
+                    {orgProfile?.phone && <div className="oi-found-row"><Ico d={ICONS.phone} size={14} /><a href={'tel:' + orgProfile.phone.replace(/[^\d+]/g, '')}>{orgProfile.phone}</a></div>}
+                    {orgProfile?.email && <div className="oi-found-row"><Ico d={ICONS.mail} size={14} /><a href={'mailto:' + orgProfile.email}>{orgProfile.email}</a></div>}
+                    {orgProfile?.website && <div className="oi-found-row"><Ico d={ICONS.link} size={14} /><a href={orgProfile.website} target="_blank" rel="noopener noreferrer">{orgProfile.host}</a></div>}
+                    <p className="oi-found-desc">{orgProfile
+                      ? orgProfile.description || (orgProfile.sources.length ? '' : 'I couldn’t read any details from ' + orgProfile.host + '. You can still carry on, and we’ll fill them in together.')
+                      : 'A new organisation. We’ll build its profile together as we go.'}</p>
                   </div>
-                  <div className="oi-found-also-col">
-                    <div className="oi-found-also">Also found</div>
-                    <div className="oi-found-tags">
-                      {Object.keys(SOURCE_LOGOS).map(n => <span key={n} className="oi-chip-sm"><SourceLogo name={n} />{n}</span>)}
+                  {orgProfile && Object.keys(orgProfile.socials).some(n => SOURCE_LOGOS[n]) && (
+                    <div className="oi-found-also-col">
+                      <div className="oi-found-also">Also found</div>
+                      <div className="oi-found-tags">
+                        {Object.entries(orgProfile.socials).filter(([n]) => SOURCE_LOGOS[n]).map(([n, href]) => <a key={n} className="oi-chip-sm" href={href} target="_blank" rel="noopener noreferrer"><SourceLogo name={n} />{n}</a>)}
+                      </div>
                     </div>
-                  </div>
+                  )}
                 </div>
                 <p className="oi-found-q">Is this your organisation?</p>
                 <button type="button" className="oi-btn oi-btn-blue oi-btn-block" onClick={submitCompany}>Yes, that&rsquo;s us</button>
@@ -1356,10 +1455,21 @@ export default function DavidModal({ isOpen, onClose }: { isOpen: boolean; onClo
 
           {/* Next steps · loading */}
           <div className={'david-screen oi-screen oi-center'+(sc('loading')?' active':'')} data-screen="loading">
-            <div className="david-loading">
-              <div className="david-loading-line">{loadingLine}</div>
-              <div className="david-loading-track"><div className="david-loading-fill" style={{ width:loadingPct+'%' }}></div></div>
-            </div>
+            {reg.status === 'error' ? (
+              <div className="oi-card oi-narrow oi-reg-error" role="alert">
+                <h3 className="oi-card-title">I couldn&rsquo;t create your account.</h3>
+                <p className="oi-card-sub">{reg.message}</p>
+                <div style={{ display:'flex', gap:10 }}>
+                  <button type="button" className="oi-btn oi-btn-navy" style={{ flex:1 }} onClick={() => nav('report')}>Back</button>
+                  <button type="button" className="oi-btn oi-btn-blue" style={{ flex:1 }} onClick={startLoading}>Try again</button>
+                </div>
+              </div>
+            ) : (
+              <div className="david-loading">
+                <div className="david-loading-line">{loadingLine}</div>
+                <div className="david-loading-track"><div className="david-loading-fill" style={{ width:loadingPct+'%' }}></div></div>
+              </div>
+            )}
           </div>
 
           {/* 11 · Let's start working together */}
@@ -1367,6 +1477,15 @@ export default function DavidModal({ isOpen, onClose }: { isOpen: boolean; onClo
             <div className="oi-card oi-narrow">
               <h3 className="oi-card-title">Let&rsquo;s start working together</h3>
               <p className="oi-card-sub">Great! Your OI Workforce is ready to go.</p>
+              {reg.result && (
+                <div className="oi-account">
+                  <div className="oi-account-title">Your account &middot; {reg.result.organisation.name}</div>
+                  <div className="oi-account-row"><span>Email</span><strong>{reg.result.user.email}</strong></div>
+                  <div className="oi-account-row"><span>Password</span><strong className="oi-account-pass">{sr.current.password}</strong>
+                    <button type="button" className="oi-link-btn" onClick={() => { try { navigator.clipboard.writeText(sr.current.password); } catch {} }}>Copy</button></div>
+                  <p className="oi-account-note">Save this password now. Your {reg.result.trial_days}-day free trial runs until {new Date(reg.result.trial_ends_at).toLocaleDateString(undefined, { day: 'numeric', month: 'long', year: 'numeric' })}.</p>
+                </div>
+              )}
               <ul className="oi-check-list">
                 {WELCOME_CHECKLIST.map((t,i) => <li key={t}><CheckDot i={i} />{t}</li>)}
               </ul>
