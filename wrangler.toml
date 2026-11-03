@@ -1,6 +1,8 @@
 name = "oi-workforce"
 compatibility_date = "2024-01-01"
 main = "./worker.js"
+# Variables are set in the Cloudflare dashboard (keys as Secrets), never here: this repo is public. Keep them on deploy.
+keep_vars = true
 
 [build]
 command = "npm run build"
