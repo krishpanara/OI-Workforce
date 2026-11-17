@@ -407,6 +407,8 @@ function BrandLogo({ name }: { name: string }) {
 }
 const SHELL_NAV: [string, string][] = [['My OI', ICONS.myoi],['Command Centre', ICONS.grid],['Projects', ICONS.folder],['Work', ICONS.briefcase],['Documents', ICONS.file],['People', ICONS.people],['Meetings', ICONS.calendar],['Knowledge Bank', ICONS.book],['More', ICONS.more]];
 
+// Where "Complete and start" on the last step takes them: their new OI. Set at build time (it's baked into the page).
+const OI_APP_URL = process.env.NEXT_PUBLIC_OI_APP_URL || 'https://dev.hyphenlabs.ai/my-oi/new-design';
 const STEP_LABELS = ['Meet','Play with','We create','Choose role','My OI (Demo)','Imagine if','Work together','Tell us','Quick questions','Your report','Welcome'];
 const TRANSIENT_SCREENS = new Set(['connecting', 'loading']);
 const SCREEN_STEP: Record<string, number> = {
@@ -1498,7 +1500,7 @@ export default function DavidModal({ isOpen, onClose }: { isOpen: boolean; onClo
                 </div>
               </div>
               <div style={{ display:'flex', gap:10 }}>
-                <button type="button" className="oi-btn oi-btn-blue" style={{ flex:1 }} onClick={onClose}>Complete and start <Ico d={ICONS.arrow} size={16} sw={2} /></button>
+                <button type="button" className="oi-btn oi-btn-blue" style={{ flex:1 }} onClick={() => window.location.assign(OI_APP_URL)}>Complete and start <Ico d={ICONS.arrow} size={16} sw={2} /></button>
               </div>
             </div>
           </div>
