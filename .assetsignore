@@ -1,0 +1,6 @@
+# Never upload these as site files, whatever assets directory a build uses (Cloudflare limit: 25 MiB per file).
+node_modules
+.next
+.git
+.wrangler
+.cache
