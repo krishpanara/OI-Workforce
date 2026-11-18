@@ -408,7 +408,7 @@ function BrandLogo({ name }: { name: string }) {
 const SHELL_NAV: [string, string][] = [['My OI', ICONS.myoi],['Command Centre', ICONS.grid],['Projects', ICONS.folder],['Work', ICONS.briefcase],['Documents', ICONS.file],['People', ICONS.people],['Meetings', ICONS.calendar],['Knowledge Bank', ICONS.book],['More', ICONS.more]];
 
 // Where "Complete and start" on the last step takes them: their new OI. Set at build time (it's baked into the page).
-const OI_APP_URL = process.env.NEXT_PUBLIC_OI_APP_URL || 'https://dev.hyphenlabs.ai/my-oi/new-design';
+const OI_APP_URL = process.env.NEXT_PUBLIC_OI_APP_URL || 'https://oiworkforce.hyphenlabs.ai/my-oi/new-design';
 const STEP_LABELS = ['Meet','Play with','We create','Choose role','My OI (Demo)','Imagine if','Work together','Tell us','Quick questions','Your report','Welcome'];
 const TRANSIENT_SCREENS = new Set(['connecting', 'loading']);
 const SCREEN_STEP: Record<string, number> = {
@@ -825,7 +825,8 @@ export default function DavidModal({ isOpen, onClose }: { isOpen: boolean; onClo
       password: sr.current.password, industry: slug,
       position: sr.current.position ? posLabel(ind, sr.current.position) : '',
       organisation: {
-        name: String(a.company || '') || company.company.trim() || orgProfile?.name || futureOrgName,
+        // No company yet: say so (the API then needs no name) rather than inventing one.
+        ...(company.none ? { no_company: true } : { name: String(a.company || '') || company.company.trim() || orgProfile?.name || futureOrgName }),
         // The API only takes its own country list (the same as the form's), so a blank one is left out.
         ...(COUNTRY_OPTIONS.includes(company.country) ? { country: company.country } : {}),
         ...(site ? { website: /^https?:\/\//i.test(site) ? site : 'https://' + site } : {}),

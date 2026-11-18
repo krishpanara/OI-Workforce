@@ -7,7 +7,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ path
   if (!ALLOWED.includes(path)) return Response.json({ error: 'Not found' }, { status: 404 });
   const key = process.env.HYPHEN_API_KEY;
   if (!key) return Response.json({ error: 'HYPHEN_API_KEY is not set' }, { status: 500 });
-  const base = (process.env.HYPHEN_API_BASE || 'https://dev.hyphenlabs.ai/api/v1/reg').replace(/\/+$/, '');
+  const base = (process.env.HYPHEN_API_BASE || 'https://oiworkforce.hyphenlabs.ai/api/v1/reg').replace(/\/+$/, '');
   try {
     const url = base + '/' + path + new URL(request.url).search;
     const res = await fetch(url, { headers: { 'X-API-Key': key, Accept: 'application/json' }, signal: AbortSignal.timeout(10000) });
@@ -28,7 +28,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ pat
   if ((await params).path.join('/') !== 'register') return Response.json({ error: 'Not found' }, { status: 404 });
   const key = process.env.HYPHEN_API_KEY;
   if (!key) return Response.json({ detail: 'HYPHEN_API_KEY is not set' }, { status: 500 });
-  const base = (process.env.HYPHEN_API_BASE || 'https://dev.hyphenlabs.ai/api/v1/reg').replace(/\/+$/, '');
+  const base = (process.env.HYPHEN_API_BASE || 'https://oiworkforce.hyphenlabs.ai/api/v1/reg').replace(/\/+$/, '');
   try {
     const res = await fetch(base + '/register', {
       method: 'POST',

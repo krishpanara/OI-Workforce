@@ -4,7 +4,8 @@ export type RegisterPayload = {
   first_name: string; last_name: string; email: string; phone?: string; password: string;
   industry: string;   // industry slug from /reg/industry-types, e.g. "restaurants"
   position: string;   // the role they picked, e.g. "Owner / CEO"
-  organisation: { name: string; country?: string; website?: string };   // country: one of the API's list (the form's COUNTRY_OPTIONS)
+  // name is required unless no_company is true ("I don't have a company yet"). country: one of the API's list (the form's COUNTRY_OPTIONS).
+  organisation: { name?: string; no_company?: boolean; country?: string; website?: string };
   answers: Record<string, string | string[]>;
 };
 export type RegisterResult = {

@@ -9,7 +9,7 @@ async function hyphenProxy(url, env) {
   const path = url.pathname.slice('/api/hyphen/'.length).replace(/\/+$/, '');
   if (!HYPHEN_PATHS.includes(path)) return Response.json({ error: 'Not found' }, { status: 404 });
   if (!env.HYPHEN_API_KEY) return Response.json({ error: 'HYPHEN_API_KEY is not set' }, { status: 500 });
-  const base = (env.HYPHEN_API_BASE || 'https://dev.hyphenlabs.ai/api/v1/reg').replace(/\/+$/, '');
+  const base = (env.HYPHEN_API_BASE || 'https://oiworkforce.hyphenlabs.ai/api/v1/reg').replace(/\/+$/, '');
   try {
     const res = await fetch(base + '/' + path + url.search, { headers: { 'X-API-Key': env.HYPHEN_API_KEY, Accept: 'application/json' } });
     if (res.ok) return new Response(res.body, { status: 200, headers: { 'Content-Type': res.headers.get('Content-Type') || 'application/json' } });
@@ -27,7 +27,7 @@ async function hyphenProxy(url, env) {
 // and the Idempotency-Key header goes along so a retried request can't create a second account.
 async function hyphenRegister(request, env) {
   if (!env.HYPHEN_API_KEY) return Response.json({ detail: 'HYPHEN_API_KEY is not set' }, { status: 500 });
-  const base = (env.HYPHEN_API_BASE || 'https://dev.hyphenlabs.ai/api/v1/reg').replace(/\/+$/, '');
+  const base = (env.HYPHEN_API_BASE || 'https://oiworkforce.hyphenlabs.ai/api/v1/reg').replace(/\/+$/, '');
   try {
     const res = await fetch(base + '/register', {
       method: 'POST',
