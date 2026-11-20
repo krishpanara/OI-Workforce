@@ -523,12 +523,6 @@ export default function DavidModal({ isOpen, onClose }: { isOpen: boolean; onClo
   useBodyScrollLock(isOpen);
 
   useEffect(() => {
-    function onKey(e: KeyboardEvent) { if (e.key === 'Escape' && isOpen) onClose(); }
-    document.addEventListener('keydown', onKey);
-    return () => document.removeEventListener('keydown', onKey);
-  }, [isOpen, onClose]);
-
-  useEffect(() => {
     if (!isOpen) return;
     let live = true;
     fetchIndustryTypes().then(list => { if (live) setApiIndustries([...list].sort((a, b) => a.sortOrder - b.sortOrder)); });
@@ -931,7 +925,8 @@ export default function DavidModal({ isOpen, onClose }: { isOpen: boolean; onClo
   if (!isOpen) return null;
 
   return (
-    <div className="david-modal open" role="dialog" aria-modal="true" aria-label="Meet your Personal OI" onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
+    // Only the × closes it: a stray click outside or Esc would throw away everything filled in so far.
+    <div className="david-modal open" role="dialog" aria-modal="true" aria-label="Meet your Personal OI">
       <div className={'david-panel oi-panel'+(slideDir === 'back' ? ' oi-slide-back' : '')+(stepNum === 5 ? ' oi-step5' : '')+(screen === 'chat' ? ' oi-fixed-h' : '')}>
         <button className="david-close" onClick={onClose} aria-label="Close">&times;</button>
         <div className="david-topbar">
