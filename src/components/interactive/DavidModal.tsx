@@ -409,12 +409,12 @@ const SHELL_NAV: [string, string][] = [['My OI', ICONS.myoi],['Command Centre', 
 
 // Where "Complete and start" on the last step takes them: their new OI. Set at build time (it's baked into the page).
 const OI_APP_URL = process.env.NEXT_PUBLIC_OI_APP_URL || 'https://oiworkforce.hyphenlabs.ai/my-oi/new-design';
-// Signs the new account straight in: that app's /login reads username / password / next from the #fragment, logs in and
-// clears them from the address bar. A #fragment never reaches any server or its logs. Without an account, the plain page.
+// Signs the new account straight in: e.g. https://oiworkforce.hyphenlabs.ai/my-oi/new-design#username=…&password=…
+// That app carries the #fragment to its login, signs in, comes back to this page and clears it from the address bar.
+// A #fragment never reaches any server or its logs. Without an account, the plain page.
 function oiAppLink(email: string, password: string): string {
   if (!email || !password) return OI_APP_URL;
-  const app = new URL(OI_APP_URL);
-  return app.origin + '/login#' + new URLSearchParams({ username: email, password, next: app.pathname + app.search });
+  return OI_APP_URL.split('#')[0] + '#' + new URLSearchParams({ username: email, password });
 }
 const STEP_LABELS = ['Meet','Play with','We create','Choose role','My OI (Demo)','Imagine if','Work together','Tell us','Quick questions','Your report','Welcome'];
 const TRANSIENT_SCREENS = new Set(['connecting', 'loading']);
